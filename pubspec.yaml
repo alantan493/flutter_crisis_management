@@ -1,0 +1,38 @@
+name: crisis_managment
+description: "A community safety application"
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  
+  # Google Fonts for beautiful typography
+  google_fonts: ^6.1.0
+  
+  # For responsive design
+  flutter_screenutil: ^5.9.0
+  
+  # For state management (if needed)
+  provider: ^6.1.1
+  flutter_animate: ^4.5.0
+  flutter_svg: ^2.0.9
+  shared_preferences: ^2.2.2
+  image_picker: ^1.1.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
