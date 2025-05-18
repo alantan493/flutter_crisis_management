@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class CitizenProfilePage extends StatefulWidget {
+  const CitizenProfilePage({super.key});
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  State<CitizenProfilePage> createState() => _CitizenProfilePageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> with SingleTickerProviderStateMixin {
+class _CitizenProfilePageState extends State<CitizenProfilePage> with SingleTickerProviderStateMixin {
   // Sample user data - in a real app this would come from a backend
   final Map<String, dynamic> _userData = {
     'name': 'Ben Dover',

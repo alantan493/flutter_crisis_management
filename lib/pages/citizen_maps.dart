@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class MapsPage extends StatefulWidget {
-  const MapsPage({super.key});
+class CitizenMapsPage extends StatefulWidget {
+  const CitizenMapsPage({super.key});
 
   @override
-  State<MapsPage> createState() => _MapsPageState();
+  State<CitizenMapsPage> createState() => _CitizenMapsPageState();
 }
 
-class _MapsPageState extends State<MapsPage> with SingleTickerProviderStateMixin {
+class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 

@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../utils/auth_utils.dart';
 
-class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+class CitizenHomePage extends StatefulWidget {
+  const CitizenHomePage({super.key});
 
   @override
-  State<HomePage> createState() => _HomePageState();
+  State<CitizenHomePage> createState() => _CitizenHomePageState();
 }
 
-class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin {
+class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -48,8 +49,9 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
         elevation: 0,
         centerTitle: true,
         actions: [
+          // Profile icon (already exists)
           Padding(
-            padding: const EdgeInsets.only(right: 16.0),
+            padding: const EdgeInsets.only(right: 8.0), // reduced padding to make room for logout
             child: Hero(
               tag: 'profileAvatar',
               child: Material(
@@ -81,6 +83,18 @@ class _HomePageState extends State<HomePage> with SingleTickerProviderStateMixin
                   ),
                 ),
               ),
+            ),
+          ),
+          
+          // Added logout icon button
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: IconButton(
+              icon: const Icon(Icons.logout, color: Color(0xFF1E293B)),
+              onPressed: () {
+                // Call the logout function
+                AuthUtils.logout(context);
+              },
             ),
           ),
         ],

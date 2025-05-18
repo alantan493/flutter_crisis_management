@@ -1,48 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'pages/citizen_home.dart';
+import 'pages/citizen_community.dart';
+import 'pages/citizen_emergency.dart';
+import 'pages/citizen_maps.dart';
+import 'pages/citizen_profile.dart';
 
-// Import all the pages
-import 'pages/home.dart';
-import 'pages/community.dart';
-import 'pages/emergency.dart';
-import 'pages/maps.dart';
-import 'pages/profile.dart';
-
-// Define global colors
-const Color primaryColor = Color(0xFF4285F4); // Primary blue
-const Color emergencyRed = Color(0xFFEA4335); // Emergency red
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-    DeviceOrientation.portraitDown,
-  ]);
-  
-  runApp(const MyApp());
-}
-
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Community Safety App',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        primaryColor: primaryColor,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: primaryColor,
-          secondary: const Color(0xFF34A853), // Green
-        ),
-        fontFamily: 'Google Sans',
-      ),
-      home: const BottomNavigationBarScreen(),
-    );
-  }
-}
+// Define emergency red color for the FAB
+const Color emergencyRed = Color(0xFFEA4335);
+const Color primaryColor = Color(0xFF4285F4);
 
 class BottomNavigationBarScreen extends StatefulWidget {
   const BottomNavigationBarScreen({super.key});
@@ -56,11 +21,11 @@ class _BottomNavigationBarScreenState extends State<BottomNavigationBarScreen> {
 
   // Pages - now using the actual page widgets
   final List<Widget> _pages = [
-    const HomePage(),
-    const MapsPage(),
+    const CitizenHomePage(),
+    const CitizenMapsPage(),
     const SizedBox(), // Emergency button placeholder
-    const CommunityPage(),
-    const ProfilePage(),
+    const CitizenCommunityPage(),
+    const CitizenProfilePage(),
   ];
 
   void _onItemTapped(int index) {
@@ -78,7 +43,7 @@ class _BottomNavigationBarScreenState extends State<BottomNavigationBarScreen> {
   void _showEmergencyReportingPage() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => const EmergencyPage(),
+        builder: (context) => const CitizenEmergencyPage(),
       ),
     );
   }
