@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class CitizenEmergencyPage extends StatefulWidget {
-  const CitizenEmergencyPage({Key? key}) : super(key: key);
+  const CitizenEmergencyPage({super.key});
 
   @override
   State<CitizenEmergencyPage> createState() => _CitizenEmergencyPageState();

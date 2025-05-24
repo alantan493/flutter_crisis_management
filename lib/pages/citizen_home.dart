@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../utils/auth_utils.dart';
 
 class CitizenHomePage extends StatefulWidget {
   const CitizenHomePage({super.key});
@@ -30,6 +29,35 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
   void dispose() {
     _animationController.dispose();
     super.dispose();
+  }
+
+  // Simple logout function to replace AuthUtils.logout
+  void _logout() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
+          actions: [
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              child: const Text('Logout'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                // Navigate back to login or clear user session
+                Navigator.of(context).pushReplacementNamed('/login');
+              },
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -66,7 +94,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
+                          color: Colors.black.withValues(alpha: 0.1),
                           blurRadius: 10,
                           offset: const Offset(0, 2),
                         ),
@@ -77,7 +105,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
                       radius: 20,
                       child: Icon(
                         Icons.person,
-                        color: Theme.of(context).primaryColor.withOpacity(0.8),
+                        color: Theme.of(context).primaryColor.withValues(alpha: 0.8),
                       ),
                     ),
                   ),
@@ -91,10 +119,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
               icon: const Icon(Icons.logout, color: Color(0xFF1E293B)),
-              onPressed: () {
-                // Call the logout function
-                AuthUtils.logout(context);
-              },
+              onPressed: _logout,
             ),
           ),
         ],
@@ -115,9 +140,9 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
         SliverToBoxAdapter(child: _buildSafetyTipsCard(context)),
         SliverToBoxAdapter(child: _buildQuickActions(context)),
         SliverToBoxAdapter(child: _buildEmergencyContactsSection(context)),
-        SliverFillRemaining(
+        const SliverFillRemaining(
           hasScrollBody: false,
-          child: const SizedBox(height: 32),
+          child: SizedBox(height: 32),
         ),
       ],
     );
@@ -180,7 +205,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF4481EB).withOpacity(0.3),
+            color: const Color(0xFF4481EB).withValues(alpha: 0.3),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -215,7 +240,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
                         "All systems normal",
                         style: GoogleFonts.poppins(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -231,7 +256,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
                             "Low Alert Level",
                             style: GoogleFonts.poppins(
                               fontSize: 14,
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -243,7 +268,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
@@ -268,7 +293,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -428,7 +453,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: color.withOpacity(0.2),
+              color: color.withValues(alpha: 0.2),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -448,7 +473,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
+                      color: color.withValues(alpha: 0.1),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -539,7 +564,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),

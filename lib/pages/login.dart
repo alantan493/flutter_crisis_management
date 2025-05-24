@@ -6,7 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 // import 'pages/citizen_home.dart';
 
 class LoginPage extends StatelessWidget {
-  const LoginPage({Key? key}) : super(key: key);
+  const LoginPage({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -11,11 +11,11 @@ class CitizenProfilePage extends StatefulWidget {
 class _CitizenProfilePageState extends State<CitizenProfilePage> with SingleTickerProviderStateMixin {
   // Sample user data - in a real app this would come from a backend
   final Map<String, dynamic> _userData = {
-    'name': 'Ben Dover',
-    'email': 'bendover@gmail.com',
+    'name': 'Elias',
+    'email': 'elias@gmail.com',
     'phone': '+65 6566 5656',
     'location': 'Singapore',
-    'emergencyContact': 'Hugh Jass',
+    'emergencyContact': 'Zaki Surin',
     'emergencyPhone': '+65 6969 9692',
     'joinDate': 'January 2023',
     'notificationsEnabled': true,
@@ -50,24 +50,6 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> with SingleTick
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFC),
       appBar: AppBar(
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 10,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.arrow_back, color: Color(0xFF1E293B), size: 20),
-          ),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
         title: Text(
           'My Profile',
           style: GoogleFonts.poppins(
@@ -79,6 +61,7 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> with SingleTick
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
+        automaticallyImplyLeading: false,
         actions: [
           IconButton(
             icon: Container(
@@ -110,7 +93,7 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> with SingleTick
             SliverToBoxAdapter(child: _buildPersonalInfoCard()),
             SliverToBoxAdapter(child: _buildSettingsCard()),
             SliverToBoxAdapter(child: _buildAccountActionsCard()),
-            SliverToBoxAdapter(child: const SizedBox(height: 32)),
+            const SliverToBoxAdapter(child: SizedBox(height: 32)),
           ],
         ),
       ),

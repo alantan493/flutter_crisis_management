@@ -265,11 +265,11 @@ class _CitizenCommunityPageState extends State<CitizenCommunityPage> with Single
                       gradient: const LinearGradient(colors: [Color(0xFFEA4335), Color(0xFFFF5252)]),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Row(
+                    child: const Row(
                       children: [
-                        const Icon(Icons.warning_amber_rounded, color: Colors.white, size: 14),
-                        const SizedBox(width: 3),
-                        const Text('ALERT', 
+                        Icon(Icons.warning_amber_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 3),
+                        Text('ALERT', 
                           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
                       ],
                     ),
@@ -309,8 +309,8 @@ class _CitizenCommunityPageState extends State<CitizenCommunityPage> with Single
                     color: const Color(0xFFF0F4FF),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Row(
-                    children: const [
+                  child: const Row(
+                    children: [
                       Icon(Icons.reply, size: 14, color: Color(0xFF4481EB)),
                       SizedBox(width: 4),
                       Text('Reply', 

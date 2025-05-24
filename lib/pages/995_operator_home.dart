@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 // Renamed this class to match what main.dart expects
 class Operator995Home extends StatefulWidget {
-  const Operator995Home({Key? key}) : super(key: key);
+  const Operator995Home({super.key});
 
   @override
   State<Operator995Home> createState() => _Operator995HomeState();
@@ -546,7 +546,7 @@ class _Operator995HomeState extends State<Operator995Home> {
             contentPadding: EdgeInsets.zero,
             dense: true,
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -587,10 +587,10 @@ class OperatorNavigationBar extends StatelessWidget {
   final Function(int) onTap;
 
   const OperatorNavigationBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
