@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "591947001404",
+    "project_id": "citizenready-c9556",
+    "storage_bucket": "citizenready-c9556.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591947001404:android:1adb8ba237ff387bf61d39",
+        "android_client_info": {
+          "package_name": "com.example.crisis_managment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPjAOi6ZOL8-Pu1R8wNwbstxq9VFoL_wM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:591947001404:android:77c3bd03dcc24795f61d39",
+        "android_client_info": {
+          "package_name": "om.example.crisis_managment"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPjAOi6ZOL8-Pu1R8wNwbstxq9VFoL_wM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
