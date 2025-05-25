@@ -14,15 +14,17 @@ pluginManagement {
         mavenCentral()
         gradlePluginPortal()
     }
+
+    plugins {
+        id("dev.flutter.flutter-gradle-plugin") version "1.0.0" apply false
+        id("org.jetbrains.kotlin.android") version "2.0.21" apply false
+        id("com.google.gms.google-services") version "4.4.0" apply false
+    }
 }
 
 plugins {
     id("dev.flutter.flutter-plugin-loader") version "1.0.0"
-    id("com.android.application") version "8.7.0" apply false
-    // START: FlutterFire Configuration
-    id("com.google.gms.google-services") version("4.3.15") apply false
-    // END: FlutterFire Configuration
-    id("org.jetbrains.kotlin.android") version "1.8.22" apply false
+    id("com.android.application") version "8.7.3" apply false
 }
 
 include(":app")
