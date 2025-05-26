@@ -129,10 +129,13 @@ class PlacesService {
 
   static Future<List<SafetyLocation>> getNearbyPlaces({
     required LatLng location,
-    double radiusKm = 1.0,
+    double radiusKm = 3.0, // Increased from 1.0 to 3.0 km for better coverage
   }) async {
     // Get API key from local.properties
     final apiKey = await ApiKeyService.getGoogleMapsApiKey();
+    
+    print('Searching around location: ${location.latitude}, ${location.longitude}');
+    print('Search radius: ${radiusKm}km');
     
     if (apiKey.isEmpty) {
       print('No API key available, using fallback data');
@@ -143,26 +146,52 @@ class PlacesService {
     final radiusMeters = (radiusKm * 1000).round();
 
     try {
-      // Search for each type of safety location
+      // Use more specific search queries for better results
       final searchQueries = [
-        {'type': 'police', 'safetyType': SafetyPlaceType.police},
-        {'type': 'hospital', 'safetyType': SafetyPlaceType.hospital},
-        {'type': 'fire_station', 'safetyType': SafetyPlaceType.fireStation},
+        {
+          'query': 'police station near Marina Bay Singapore',
+          'type': 'police', 
+          'safetyType': SafetyPlaceType.police
+        },
+        {
+          'query': 'hospital emergency room near Marina Bay Singapore',
+          'type': 'hospital', 
+          'safetyType': SafetyPlaceType.hospital
+        },
+        {
+          'query': 'fire station SCDF near Marina Bay Singapore',
+          'type': 'fire_station', 
+          'safetyType': SafetyPlaceType.fireStation
+        },
       ];
 
-      // Search for standard place types
+      // Search using text search for more accurate results
       for (final query in searchQueries) {
         try {
-          final places = await _searchByType(
+          final places = await _searchByTextQuery(
             location: location,
-            type: query['type'] as String,
+            query: query['query'] as String,
             radiusMeters: radiusMeters,
             safetyType: query['safetyType'] as SafetyPlaceType,
             apiKey: apiKey,
           );
           allPlaces.addAll(places);
         } catch (e) {
-          print('Error searching for ${query['type']}: $e');
+          print('Error searching for ${query['query']}: $e');
+          
+          // Fallback to type-based search if text search fails
+          try {
+            final fallbackPlaces = await _searchByType(
+              location: location,
+              type: query['type'] as String,
+              radiusMeters: radiusMeters,
+              safetyType: query['safetyType'] as SafetyPlaceType,
+              apiKey: apiKey,
+            );
+            allPlaces.addAll(fallbackPlaces);
+          } catch (e2) {
+            print('Fallback search also failed for ${query['type']}: $e2');
+          }
         }
       }
 
@@ -190,6 +219,76 @@ class PlacesService {
     }
   }
 
+  static Future<List<SafetyLocation>> _searchByTextQuery({
+    required LatLng location,
+    required String query,
+    required int radiusMeters,
+    required SafetyPlaceType safetyType,
+    required String apiKey,
+  }) async {
+    final url = Uri.parse(
+      '$_baseUrl/textsearch/json?'
+      'query=$query&'
+      'location=${location.latitude},${location.longitude}&'
+      'radius=$radiusMeters&'
+      'key=$apiKey'
+    );
+
+    print('Text Search URL: $url'); // Debug log
+
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      
+      print('Text Search Status: ${data['status']}'); // Debug log
+      print('Text Search Results: ${data['results']?.length ?? 0}'); // Debug log
+      
+      if (data['status'] == 'OK' || data['status'] == 'ZERO_RESULTS') {
+        final List<SafetyLocation> places = [];
+        
+        if (data['results'] != null) {
+          for (final place in data['results']) {
+            try {
+              final lat = place['geometry']['location']['lat']?.toDouble();
+              final lng = place['geometry']['location']['lng']?.toDouble();
+              
+              if (lat != null && lng != null) {
+                final placeLocation = LatLng(lat, lng);
+                final distance = _calculateDistance(location, placeLocation);
+                
+                // Only include if within reasonable distance (5km max)
+                if (distance <= 5.0) {
+                  places.add(SafetyLocation(
+                    id: place['place_id'] ?? '',
+                    name: place['name'] ?? 'Unknown',
+                    location: placeLocation,
+                    type: safetyType,
+                    distanceKm: distance,
+                    rating: place['rating']?.toDouble(),
+                    isOpen: place['opening_hours']?['open_now'],
+                    address: place['formatted_address'] ?? '',
+                  ));
+                  
+                  print('Added: ${place['name']} - ${distance.toStringAsFixed(2)}km away');
+                }
+              }
+            } catch (e) {
+              print('Error parsing text search result: $e');
+              continue;
+            }
+          }
+        }
+        
+        return places;
+      } else {
+        throw Exception('Text search error: ${data['status']} - ${data['error_message'] ?? 'Unknown error'}');
+      }
+    } else {
+      throw Exception('Text search HTTP error: ${response.statusCode}');
+    }
+  }
+
   static Future<List<SafetyLocation>> _searchByType({
     required LatLng location,
     required String type,
@@ -205,10 +304,15 @@ class PlacesService {
       'key=$apiKey'
     );
 
+    print('API Request URL: $url'); // Debug log
+
     final response = await http.get(url);
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
+      
+      print('API Response Status: ${data['status']}'); // Debug log
+      print('Number of results: ${data['results']?.length ?? 0}'); // Debug log
       
       if (data['status'] == 'OK' || data['status'] == 'ZERO_RESULTS') {
         final List<SafetyLocation> places = [];
@@ -219,20 +323,27 @@ class PlacesService {
               final lat = place['geometry']['location']['lat']?.toDouble();
               final lng = place['geometry']['location']['lng']?.toDouble();
               
+              print('Found place: ${place['name']} at ($lat, $lng)'); // Debug log
+              print('Place types: ${place['types']}'); // Debug log
+              print('Business status: ${place['business_status']}'); // Debug log
+              
               if (lat != null && lng != null) {
                 final placeLocation = LatLng(lat, lng);
                 final distance = _calculateDistance(location, placeLocation);
                 
-                places.add(SafetyLocation(
-                  id: place['place_id'] ?? '',
-                  name: place['name'] ?? 'Unknown',
-                  location: placeLocation,
-                  type: safetyType,
-                  distanceKm: distance,
-                  rating: place['rating']?.toDouble(),
-                  isOpen: place['opening_hours']?['open_now'],
-                  address: place['vicinity'] ?? place['formatted_address'] ?? '',
-                ));
+                // Only include places that are currently operational
+                if (place['business_status'] == 'OPERATIONAL' || place['business_status'] == null) {
+                  places.add(SafetyLocation(
+                    id: place['place_id'] ?? '',
+                    name: place['name'] ?? 'Unknown',
+                    location: placeLocation,
+                    type: safetyType,
+                    distanceKm: distance,
+                    rating: place['rating']?.toDouble(),
+                    isOpen: place['opening_hours']?['open_now'],
+                    address: place['vicinity'] ?? place['formatted_address'] ?? '',
+                  ));
+                }
               }
             } catch (e) {
               print('Error parsing place: $e');
@@ -243,9 +354,11 @@ class PlacesService {
         
         return places;
       } else {
+        print('API Error: ${data['status']} - ${data['error_message']}'); // Debug log
         throw Exception('Places API error: ${data['status']} - ${data['error_message'] ?? 'Unknown error'}');
       }
     } else {
+      print('HTTP Error: ${response.statusCode} - ${response.body}'); // Debug log
       throw Exception('HTTP error: ${response.statusCode}');
     }
   }
@@ -371,8 +484,14 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
   bool _isSimulating = false;
   bool _isLoadingPlaces = false;
   
-  // Current location (can be real GPS or simulated)
-  final LatLng _currentLocation = const LatLng(1.2834, 103.8607); // Marina Bay Sands as default
+  // Hardcoded current location - Marina Bay Sands
+  final LatLng _currentLocation = const LatLng(1.2834, 103.8607); // Marina Bay Sands, Singapore
+  // Alternative locations you can use:
+  // Singapore CBD: LatLng(1.3521, 103.8198)
+  // New York: LatLng(40.7128, -74.0060)
+  // London: LatLng(51.5074, -0.1278)
+  
+  bool _locationLoaded = true;
   
   // Dynamic places data
   List<SafetyLocation> _nearbyPlaces = [];
@@ -398,6 +517,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
     );
     _animationController.forward();
     
+    // Initialize with hardcoded location
     _initializeCurrentLocationMarker();
     _loadNearbyPlaces();
   }
@@ -643,16 +763,13 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
       _isSimulating = true;
     });
     
-    // Reinitialize the current location marker to ensure it shows correctly
-    _initializeCurrentLocationMarker();
+    // Reload places around the hardcoded location
+    _loadNearbyPlaces();
     
-    // Animate camera to current location
+    // Center map on current location
     _mapController?.animateCamera(
       CameraUpdate.newLatLngZoom(_currentLocation, 16.0),
     );
-    
-    // Reload places for current location
-    _loadNearbyPlaces();
   }
 
   void _stopLocationSimulation() {
@@ -903,7 +1020,9 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                           ),
                         ),
                         Text(
-                          "${_nearbyPlaces.length} safety locations nearby",
+                          _isLoadingPlaces 
+                              ? "Loading safety locations..."
+                              : "${_nearbyPlaces.length} safety locations nearby",
                           style: GoogleFonts.poppins(
                             color: Colors.green[700],
                             fontSize: 14,
