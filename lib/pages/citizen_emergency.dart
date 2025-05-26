@@ -77,8 +77,9 @@ class _CitizenEmergencyPageState extends State<CitizenEmergencyPage> with Single
     super.dispose();
   }
 
-  void _startCall() {
+  void _startCall(String emergencyType) {
     setState(() {
+      _selectedEmergency = emergencyType;
       _isCallInProgress = true;
       _callDurationInSeconds = 0;
       
@@ -428,14 +429,14 @@ class _CitizenEmergencyPageState extends State<CitizenEmergencyPage> with Single
             Icon(
               icon,
               color: isSelected ? const Color(0xFFEA4335) : Colors.grey,
-              size: 20, // INCREASED from 18
+              size: 20,
             ),
-            Container(width: 6), // INCREASED from 4
+            Container(width: 6),
             Text(
               label,
               style: GoogleFonts.poppins(
                 color: isSelected ? const Color(0xFFEA4335) : Colors.grey,
-                fontSize: 16, // INCREASED from 14
+                fontSize: 16,
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
@@ -938,85 +939,145 @@ class _CitizenEmergencyPageState extends State<CitizenEmergencyPage> with Single
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Header with back button style
           Text(
-            "Emergency Type:",
+            "Emergency Type",
             style: GoogleFonts.poppins(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF1E293B),
             ),
           ),
-          Container(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.grey.shade300),
-            ),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<String>(
-                value: _selectedEmergency,
-                isExpanded: true,
-                icon: const Icon(Icons.arrow_drop_down),
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                borderRadius: BorderRadius.circular(10),
-                items: _emergencyTypes.map((String type) {
-                  return DropdownMenuItem<String>(
-                    value: type,
-                    child: Text(type),
-                  );
-                }).toList(),
-                onChanged: (String? value) {
-                  if (value != null) {
-                    setState(() {
-                      _selectedEmergency = value;
-                    });
-                  }
-                },
-              ),
-            ),
-          ),
+          Container(height: 24),
           
-          // Spacer
-          Container(height: 16),
-          
-          // Emergency call button
+          // Emergency call buttons
           Expanded(
-            child: InkWell(
-              onTap: _startCall,
-              borderRadius: BorderRadius.circular(16),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFFEA4335), Color(0xFFFF7043)],
+            child: Column(
+              children: [
+                // Medical/Fire/Traffic Accidents button
+                Expanded(
+                  flex: 5,
+                  child: InkWell(
+                    onTap: () => _startCall('Medical/Fire/Traffic Emergency'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFFEA4335), Color(0xFFFF7043)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: primaryColor.withAlpha(76), 
+                            blurRadius: 15,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.phone_in_talk, color: Colors.white, size: 50),
+                          Container(height: 16),
+                          Text(
+                            "Medical/Fire/Traffic Accidents",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Container(height: 4),
+                          Text(
+                            "START EMERGENCY CALL",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Container(height: 8),
+                          Text(
+                            "Call Singapore Civil Defence Force (995)",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                  boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 15)],
                 ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.call, color: Colors.white, size: 60),
-                    Container(height: 16),
-                    Text(
-                      "START EMERGENCY CALL",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
+                
+                Container(height: 16),
+                
+                // Police Emergency button
+                Expanded(
+                  flex: 5,
+                  child: InkWell(
+                    onTap: () => _startCall('Police Emergency'),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16),
+                        gradient: const LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [Color(0xFF7B68EE), Color(0xFF9370DB)],
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF7B68EE).withAlpha(76), 
+                            blurRadius: 15,
+                            offset: const Offset(0, 4),
+                          )
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.phone_in_talk, color: Colors.white, size: 50),
+                          Container(height: 16),
+                          Text(
+                            "Reporting on Public Order Offences",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          Container(height: 4),
+                          Text(
+                            "START EMERGENCY CALL",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Container(height: 8),
+                          Text(
+                            "Call Singapore Police Force (999)",
+                            style: GoogleFonts.poppins(
+                              color: Colors.white.withOpacity(0.9),
+                              fontSize: 13,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
-                    Container(height: 8),
-                    Text(
-                      "Call Singapore Emergency Services (995)",
-                      style: GoogleFonts.poppins(
-                        color: Colors.white,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         ],
