@@ -18,13 +18,12 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
   GoogleMapController? _mapController;
   Timer? _locationTimer;
   bool _isSimulating = false;
-  int _currentLocationIndex = 0;
   
-  // Marina Bay Sands single point simulation
-  final LatLng _marinaBaySands = LatLng(1.2834, 103.8607); // Marina Bay Sands main entrance
+  // Marina Bay Sands single point simulation - changed to static const
+  static const LatLng _marinaBaySands = LatLng(1.2834, 103.8607); // Marina Bay Sands main entrance
   
   // Current simulated location
-  LatLng _currentLocation = LatLng(1.2834, 103.8607); // Marina Bay Sands
+  LatLng _currentLocation = const LatLng(1.2834, 103.8607); // Marina Bay Sands
   
   // Map markers
   Set<Marker> _markers = {};
@@ -47,29 +46,29 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
   void _initializeMarkers() {
     _markers = {
       Marker(
-        markerId: MarkerId('current_location'),
+        markerId: const MarkerId('current_location'),
         position: _currentLocation,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        infoWindow: InfoWindow(
+        infoWindow: const InfoWindow(
           title: 'Your Location',
           snippet: 'Marina Bay Sands Area',
         ),
       ),
       // Safety locations around Marina Bay Sands
       Marker(
-        markerId: MarkerId('police_station'),
-        position: LatLng(1.2810, 103.8590),
+        markerId: const MarkerId('police_station'),
+        position: const LatLng(1.2810, 103.8590),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
-        infoWindow: InfoWindow(
+        infoWindow: const InfoWindow(
           title: 'Marina Bay Police Post',
           snippet: '0.3 km away',
         ),
       ),
       Marker(
-        markerId: MarkerId('hospital'),
-        position: LatLng(1.2800, 103.8550),
+        markerId: const MarkerId('hospital'),
+        position: const LatLng(1.2800, 103.8550),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
-        infoWindow: InfoWindow(
+        infoWindow: const InfoWindow(
           title: 'Raffles Hospital',
           snippet: '0.8 km away',
         ),
@@ -103,10 +102,10 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
     _markers.removeWhere((marker) => marker.markerId.value == 'current_location');
     _markers.add(
       Marker(
-        markerId: MarkerId('current_location'),
+        markerId: const MarkerId('current_location'),
         position: _currentLocation,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
-        infoWindow: InfoWindow(
+        infoWindow: const InfoWindow(
           title: 'Your Location',
           snippet: 'Marina Bay Sands Area',
         ),
@@ -191,9 +190,9 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
               ),
               if (_isSimulating)
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
+                    color: Colors.green.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -226,7 +225,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -260,7 +259,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF4CAF50).withOpacity(0.3),
+                  color: const Color(0xFF4CAF50).withValues(alpha: 0.3),
                   blurRadius: 15,
                   offset: const Offset(0, 5),
                 ),
@@ -298,7 +297,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withValues(alpha: 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),
@@ -421,12 +420,12 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
         color: isSelected ? color : Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isSelected ? Colors.transparent : color.withOpacity(0.3),
+          color: isSelected ? Colors.transparent : color.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: isSelected ? color.withOpacity(0.3) : Colors.transparent,
+            color: isSelected ? color.withValues(alpha: 0.3) : Colors.transparent,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -519,7 +518,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -537,7 +536,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
@@ -572,7 +571,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(

@@ -13,8 +13,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: const StartingPage(),  // Try using StartingPage
+    return const MaterialApp(
+      home: StartingPage(),  // Try using StartingPage
     );
   }
 }

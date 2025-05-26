@@ -28,6 +28,7 @@ class _Operator995HomeState extends State<Operator995Home> {
   ];
   
   int _currentStep = 0;
+  bool _isRecording = false;
 
   @override
   Widget build(BuildContext context) {
@@ -181,6 +182,7 @@ class _Operator995HomeState extends State<Operator995Home> {
                       _buildTextField(
                         label: 'Emergency Description',
                         hint: 'Brief description of the emergency',
+                        initialValue: _description,
                         onChanged: (value) {
                           setState(() {
                             _description = value;
@@ -230,6 +232,7 @@ class _Operator995HomeState extends State<Operator995Home> {
                       _buildTextField(
                         label: 'Address',
                         hint: 'Street address of the emergency',
+                        initialValue: _location,
                         onChanged: (value) {
                           setState(() {
                             _location = value;
@@ -373,7 +376,7 @@ class _Operator995HomeState extends State<Operator995Home> {
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 8,
               offset: const Offset(0, -2),
             ),
@@ -410,7 +413,7 @@ class _Operator995HomeState extends State<Operator995Home> {
             const SizedBox(width: 12),
             Container(
               decoration: BoxDecoration(
-                color: const Color(0xFFEA4335).withOpacity(0.1),
+                color: const Color(0xFFEA4335).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: IconButton(
@@ -476,6 +479,7 @@ class _Operator995HomeState extends State<Operator995Home> {
     required String label,
     required String hint,
     required Function(String) onChanged,
+    String? initialValue,
     int maxLines = 1,
     TextInputType keyboardType = TextInputType.text,
   }) {
@@ -491,6 +495,7 @@ class _Operator995HomeState extends State<Operator995Home> {
         ),
         const SizedBox(height: 8),
         TextFormField(
+          initialValue: initialValue,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: GoogleFonts.poppins(
@@ -578,8 +583,6 @@ class _Operator995HomeState extends State<Operator995Home> {
       },
     );
   }
-  
-  bool _isRecording = false;
 }
 
 class OperatorNavigationBar extends StatelessWidget {
@@ -612,7 +615,7 @@ class OperatorNavigationBar extends StatelessWidget {
           margin: const EdgeInsets.only(right: 16),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.2),
+            color: Colors.white.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(16),
           ),
           child: Row(
