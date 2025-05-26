@@ -3,7 +3,7 @@ import 'pages/citizen_home.dart';
 import 'pages/citizen_community.dart';
 import 'pages/citizen_emergency.dart';
 import 'pages/citizen_maps.dart';
-import 'pages/citizen_profile.dart';
+import 'pages/user_profile/citizen_profile.dart';
 
 // Define emergency red color for the FAB
 const Color emergencyRed = Color(0xFFEA4335);
