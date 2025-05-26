@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'starting_page.dart';
+import '../starting_page.dart';
 
 
 class CitizenHomePage extends StatefulWidget {

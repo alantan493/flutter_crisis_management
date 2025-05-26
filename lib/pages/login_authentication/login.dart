@@ -10,7 +10,7 @@ import 'package:animate_do/animate_do.dart';
 // Make sure these paths match your folder structure
 import 'create_account.dart';
 import 'forget_password.dart';
-import '../citizen_bottom_navigation_bar.dart';
+import '../../citizen_bottom_navigation_bar.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
