@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
-import 'dart:ui';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
@@ -209,359 +208,335 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     final screenSize = MediaQuery.of(context).size;
     
     return Scaffold(
+      backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light,
+        value: SystemUiOverlayStyle.dark,
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Blurred Background Image with Gradient Overlay
-              ShaderMask(
-                shaderCallback: (rect) {
-                  return LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.6),
-                      Colors.black.withValues(alpha: 0.4),
-                    ],
-                  ).createShader(rect);
-                },
-                blendMode: BlendMode.dstIn,
-                child: Image.asset(
-                  'assets/icons/background.png',
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) {
-                    return Container(color: const Color(0xFF0D2149));
-                  },
-                ),
-              ),
-              
-              // Animated gradient overlay
+              // Light background with subtle pattern
               Container(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      const Color(0xFF0D2149).withValues(alpha: 0.8),
-                      const Color(0xFF113366).withValues(alpha: 0.6),
-                      const Color(0xFF1E4D8C).withValues(alpha: 0.4),
+                      Colors.white,
+                      Colors.grey.shade50,
+                      Colors.blue.shade50.withValues(alpha: 0.3),
                     ],
                   ),
                 ),
               ),
               
-              // Content with blur effect
-              BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: SizedBox(
-                    height: screenSize.height,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                      child: SafeArea(
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const SizedBox(height: 40),
-                              
-                              // Animated logo at the top
-                              Center(
-                                child: FadeIn(
-                                  duration: const Duration(milliseconds: 1000),
-                                  child: Container(
-                                    height: 60,
-                                    width: 60,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      boxShadow: [
-                                        BoxShadow(
-                                          color: Colors.white.withValues(alpha: 0.2),
-                                          blurRadius: 20,
-                                          spreadRadius: 5,
-                                        ),
-                                      ],
-                                    ),
-                                    child: Image.asset(
-                                      'assets/icons/logo.png',
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return const Icon(
-                                          Icons.lock_outline_rounded,
-                                          size: 40,
-                                          color: Colors.white,
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              
-                              SizedBox(height: screenSize.height * 0.04),
-                              
-                              // Welcome text
-                              FadeInDown(
-                                delay: const Duration(milliseconds: 200),
-                                duration: const Duration(milliseconds: 800),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Welcome back',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                        height: 1.2,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Sign in to continue',
-                                      style: GoogleFonts.poppins(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w400,
-                                        color: const Color(0xFFB8C7E0),
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              
-                              SizedBox(height: screenSize.height * 0.06),
-                              
-                              // Email Input Field
-                              FadeInLeft(
-                                delay: const Duration(milliseconds: 400),
-                                duration: const Duration(milliseconds: 800),
-                                child: _buildInputField(
-                                  controller: _emailController,
-                                  focusNode: _emailFocusNode,
-                                  label: 'Email',
-                                  prefixIcon: Icons.email_outlined,
-                                  keyboardType: TextInputType.emailAddress,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your email';
-                                    }
-                                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                      return 'Please enter a valid email';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              
-                              SizedBox(height: screenSize.height * 0.025),
-                              
-                              // Password Input Field
-                              FadeInRight(
-                                delay: const Duration(milliseconds: 600),
-                                duration: const Duration(milliseconds: 800),
-                                child: _buildInputField(
-                                  controller: _passwordController,
-                                  focusNode: _passwordFocusNode,
-                                  label: 'Password',
-                                  prefixIcon: Icons.lock_outline_rounded,
-                                  isPassword: true,
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return 'Please enter your password';
-                                    }
-                                    if (value.length < 6) {
-                                      return 'Password must be at least 6 characters';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              
-                              // Forgot Password
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: FadeInUp(
-                                  delay: const Duration(milliseconds: 700),
-                                  duration: const Duration(milliseconds: 800),
-                                  child: TextButton(
-                                    onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        PageRouteBuilder(
-                                          pageBuilder: (_, __, ___) => const ForgetPasswordPage(),
-                                          transitionDuration: const Duration(milliseconds: 500),
-                                          transitionsBuilder: (_, animation, __, child) {
-                                            return FadeTransition(
-                                              opacity: animation,
-                                              child: child,
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
-                                    style: TextButton.styleFrom(
-                                      foregroundColor: const Color(0xFFB8C7E0),
-                                      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                                    ),
-                                    child: Text(
-                                      'Forgot Password?',
-                                      style: GoogleFonts.poppins(
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                        height: 1.3,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              
-                              SizedBox(height: screenSize.height * 0.04),
-                              
-                              // Sign In Button
-                              FadeInUp(
-                                delay: const Duration(milliseconds: 800),
-                                duration: const Duration(milliseconds: 800),
-                                child: _buildPrimaryButton(
-                                  text: 'Sign In',
-                                  onPressed: _login,
-                                  isLoading: _isLoading,
-                                ),
-                              ),
-                              
-                              SizedBox(height: screenSize.height * 0.025),
-                              
-                              // Or continue with text
-                              FadeInUp(
-                                delay: const Duration(milliseconds: 900),
-                                duration: const Duration(milliseconds: 800),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Container(
-                                        height: 1,
-                                        color: const Color(0xFF2C4875),
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                                      child: Text(
-                                        'Or continue with',
-                                        style: GoogleFonts.poppins(
-                                          fontSize: 14,
-                                          color: const Color(0xFFB8C7E0),
-                                          fontWeight: FontWeight.w500,
-                                          height: 1.3,
-                                        ),
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Container(
-                                        height: 1,
-                                        color: const Color(0xFF2C4875),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              
-                              SizedBox(height: screenSize.height * 0.025),
-                              
-                              // Social login options
-                              FadeInUp(
-                                delay: const Duration(milliseconds: 1000),
-                                duration: const Duration(milliseconds: 800),
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    _buildSocialButton(
-                                      icon: 'assets/icons/google.svg',
-                                      fallbackIcon: Icons.g_mobiledata_rounded,
-                                      onPressed: () {
-                                        HapticFeedback.lightImpact();
-                                      },
-                                    ),
-                                    const SizedBox(width: 20),
-                                    _buildSocialButton(
-                                      icon: 'assets/icons/apple.svg',
-                                      fallbackIcon: Icons.apple_rounded,
-                                      onPressed: () {
-                                        HapticFeedback.lightImpact();
-                                      },
-                                    ),
-                                    const SizedBox(width: 20),
-                                    _buildSocialButton(
-                                      icon: 'assets/icons/facebook.svg',
-                                      fallbackIcon: Icons.facebook_rounded,  
-                                      onPressed: () {
-                                        HapticFeedback.lightImpact();
-                                      },
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              
-                              const Spacer(),
-                              
-                              // Create account text
-                              FadeInUp(
-                                delay: const Duration(milliseconds: 1100),
-                                duration: const Duration(milliseconds: 800),
-                                child: Center(
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        "Don't have an account? ",
-                                        style: GoogleFonts.poppins(
-                                          color: Colors.white.withValues(alpha: 0.7),
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () {
-                                          Navigator.push(
-                                            context,
-                                            PageRouteBuilder(
-                                              pageBuilder: (_, __, ___) => const CreateAccountPage(),
-                                              transitionDuration: const Duration(milliseconds: 500),
-                                              transitionsBuilder: (_, animation, __, child) {
-                                                return SlideTransition(
-                                                  position: Tween<Offset>(
-                                                    begin: const Offset(1, 0),
-                                                    end: Offset.zero,
-                                                  ).animate(animation),
-                                                  child: child,
-                                                );
-                                              },
-                                            ),
-                                          );
-                                        },
-                                        style: TextButton.styleFrom(
-                                          padding: EdgeInsets.zero,
-                                          minimumSize: Size.zero,
-                                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                        child: Text(
-                                          'Create Account',
-                                          style: GoogleFonts.poppins(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
+              // Content
+              SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: SizedBox(
+                  height: screenSize.height,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                    child: SafeArea(
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const SizedBox(height: 40),
+                            
+                            // Animated logo at the top
+                            Center(
+                              child: FadeIn(
+                                duration: const Duration(milliseconds: 1000),
+                                child: Container(
+                                  height: 60,
+                                  width: 60,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.blue.shade100,
+                                        blurRadius: 20,
+                                        spreadRadius: 5,
                                       ),
                                     ],
                                   ),
+                                  child: Image.asset(
+                                    'assets/icons/logo.png',
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Icon(
+                                        Icons.lock_outline_rounded,
+                                        size: 40,
+                                        color: Colors.blue.shade600,
+                                      );
+                                    },
+                                  ),
                                 ),
                               ),
-                              SizedBox(height: screenSize.height * 0.03),
-                            ],
-                          ),
+                            ),
+                            
+                            SizedBox(height: screenSize.height * 0.04),
+                            
+                            // Welcome text
+                            FadeInDown(
+                              delay: const Duration(milliseconds: 200),
+                              duration: const Duration(milliseconds: 800),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Welcome back',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 32,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                      letterSpacing: 0.5,
+                                      height: 1.2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Sign in to continue',
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w400,
+                                      color: Colors.grey.shade600,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            SizedBox(height: screenSize.height * 0.06),
+                            
+                            // Email Input Field
+                            FadeInLeft(
+                              delay: const Duration(milliseconds: 400),
+                              duration: const Duration(milliseconds: 800),
+                              child: _buildInputField(
+                                controller: _emailController,
+                                focusNode: _emailFocusNode,
+                                label: 'Email',
+                                prefixIcon: Icons.email_outlined,
+                                keyboardType: TextInputType.emailAddress,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your email';
+                                  }
+                                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                    return 'Please enter a valid email';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            
+                            SizedBox(height: screenSize.height * 0.025),
+                            
+                            // Password Input Field
+                            FadeInRight(
+                              delay: const Duration(milliseconds: 600),
+                              duration: const Duration(milliseconds: 800),
+                              child: _buildInputField(
+                                controller: _passwordController,
+                                focusNode: _passwordFocusNode,
+                                label: 'Password',
+                                prefixIcon: Icons.lock_outline_rounded,
+                                isPassword: true,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return 'Please enter your password';
+                                  }
+                                  if (value.length < 6) {
+                                    return 'Password must be at least 6 characters';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                            
+                            // Forgot Password
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: FadeInUp(
+                                delay: const Duration(milliseconds: 700),
+                                duration: const Duration(milliseconds: 800),
+                                child: TextButton(
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      PageRouteBuilder(
+                                        pageBuilder: (_, __, ___) => const ForgetPasswordPage(),
+                                        transitionDuration: const Duration(milliseconds: 500),
+                                        transitionsBuilder: (_, animation, __, child) {
+                                          return FadeTransition(
+                                            opacity: animation,
+                                            child: child,
+                                          );
+                                        },
+                                      ),
+                                    );
+                                  },
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: Colors.blue.shade600,
+                                    padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                                  ),
+                                  child: Text(
+                                    'Forgot Password?',
+                                    style: GoogleFonts.poppins(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 14,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                            
+                            SizedBox(height: screenSize.height * 0.04),
+                            
+                            // Sign In Button
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 800),
+                              duration: const Duration(milliseconds: 800),
+                              child: _buildPrimaryButton(
+                                text: 'Sign In',
+                                onPressed: _login,
+                                isLoading: _isLoading,
+                              ),
+                            ),
+                            
+                            SizedBox(height: screenSize.height * 0.025),
+                            
+                            // Or continue with text
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 900),
+                              duration: const Duration(milliseconds: 800),
+                              child: Row(
+                                children: [
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(
+                                      'Or continue with',
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 14,
+                                        color: Colors.grey.shade600,
+                                        fontWeight: FontWeight.w500,
+                                        height: 1.3,
+                                      ),
+                                    ),
+                                  ),
+                                  Expanded(
+                                    child: Container(
+                                      height: 1,
+                                      color: Colors.grey.shade300,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            SizedBox(height: screenSize.height * 0.025),
+                            
+                            // Social login options
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 1000),
+                              duration: const Duration(milliseconds: 800),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  _buildSocialButton(
+                                    icon: 'assets/icons/google.svg',
+                                    fallbackIcon: Icons.g_mobiledata_rounded,
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                    },
+                                  ),
+                                  const SizedBox(width: 20),
+                                  _buildSocialButton(
+                                    icon: 'assets/icons/apple.svg',
+                                    fallbackIcon: Icons.apple_rounded,
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                    },
+                                  ),
+                                  const SizedBox(width: 20),
+                                  _buildSocialButton(
+                                    icon: 'assets/icons/facebook.svg',
+                                    fallbackIcon: Icons.facebook_rounded,  
+                                    onPressed: () {
+                                      HapticFeedback.lightImpact();
+                                    },
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            const Spacer(),
+                            
+                            // Create account text
+                            FadeInUp(
+                              delay: const Duration(milliseconds: 1100),
+                              duration: const Duration(milliseconds: 800),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      "Don't have an account? ",
+                                      style: GoogleFonts.poppins(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    TextButton(
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          PageRouteBuilder(
+                                            pageBuilder: (_, __, ___) => const CreateAccountPage(),
+                                            transitionDuration: const Duration(milliseconds: 500),
+                                            transitionsBuilder: (_, animation, __, child) {
+                                              return SlideTransition(
+                                                position: Tween<Offset>(
+                                                  begin: const Offset(1, 0),
+                                                  end: Offset.zero,
+                                                ).animate(animation),
+                                                child: child,
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                      style: TextButton.styleFrom(
+                                        padding: EdgeInsets.zero,
+                                        minimumSize: Size.zero,
+                                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                      ),
+                                      child: Text(
+                                        'Create Account',
+                                        style: GoogleFonts.poppins(
+                                          color: Colors.blue.shade600,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: screenSize.height * 0.03),
+                          ],
                         ),
                       ),
                     ),
@@ -590,7 +565,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       controller: controller,
       focusNode: focusNode,
       style: GoogleFonts.poppins(
-        color: Colors.white,
+        color: Colors.black87,
         fontSize: 16,
         height: 1.5,
       ),
@@ -600,20 +575,20 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       decoration: InputDecoration(
         labelText: label,
         labelStyle: GoogleFonts.poppins(
-          color: isFocused ? const Color(0xFFD0DFF9) : const Color(0xFFB8C7E0),
+          color: isFocused ? Colors.blue.shade600 : Colors.grey.shade600,
           fontSize: isFocused ? 14 : 16,
           fontWeight: isFocused ? FontWeight.w500 : FontWeight.normal,
         ),
         prefixIcon: Icon(
           prefixIcon,
-          color: isFocused ? const Color(0xFFD0DFF9) : const Color(0xFFB8C7E0),
+          color: isFocused ? Colors.blue.shade600 : Colors.grey.shade600,
           size: 22,
         ),
         suffixIcon: isPassword
             ? IconButton(
                 icon: Icon(
                   _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
-                  color: isFocused ? const Color(0xFFD0DFF9) : const Color(0xFFB8C7E0),
+                  color: isFocused ? Colors.blue.shade600 : Colors.grey.shade600,
                   size: 22,
                 ),
                 onPressed: () {
@@ -624,14 +599,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               )
             : null,
         filled: true,
-        fillColor: const Color(0xFF0D2555).withValues(alpha: 0.5),
+        fillColor: Colors.grey.shade50,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: const Color(0xFF2C4875).withValues(alpha: 0.5), width: 1.5),
+          borderSide: BorderSide(color: Colors.grey.shade300, width: 1.5),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFF4A7BD1), width: 1.5),
+          borderSide: BorderSide(color: Colors.blue.shade600, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -648,7 +623,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
-      cursorColor: const Color(0xFFD0DFF9),
+      cursorColor: Colors.blue.shade600,
     );
   }
   
@@ -663,13 +638,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4A7BD1),
+          backgroundColor: Colors.blue.shade600,
           foregroundColor: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           elevation: 8,
-          shadowColor: const Color(0xFF4A7BD1).withValues(alpha: 0.5),
+          shadowColor: Colors.blue.shade600.withValues(alpha: 0.3),
           padding: const EdgeInsets.symmetric(vertical: 14),
         ),
         child: isLoading
@@ -702,15 +677,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       height: 56,
       width: 80,
       decoration: BoxDecoration(
-        color: const Color(0xFF0D2555).withValues(alpha: 0.6),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: const Color(0xFF2C4875).withValues(alpha: 0.7),
+          color: Colors.grey.shade300,
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0A1A38).withValues(alpha: 0.3),
+            color: Colors.grey.shade200,
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -721,18 +696,18 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: onPressed,
-          splashColor: const Color(0xFF4A7BD1).withValues(alpha: 0.2),
-          highlightColor: const Color(0xFF4A7BD1).withValues(alpha: 0.1),
+          splashColor: Colors.blue.shade50,
+          highlightColor: Colors.blue.shade100,
           child: Center(
             child: SvgPicture.asset(
               icon,
               height: 24,
               width: 24,
-              colorFilter: const ColorFilter.mode(Color(0xFFD0DFF9), BlendMode.srcIn),
+              colorFilter: ColorFilter.mode(Colors.grey.shade700, BlendMode.srcIn),
               placeholderBuilder: (BuildContext context) => Icon(
                 fallbackIcon,
                 size: 24,
-                color: const Color(0xFFD0DFF9),
+                color: Colors.grey.shade700,
               ),
             ),
           ),
