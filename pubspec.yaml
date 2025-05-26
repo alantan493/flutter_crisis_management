@@ -20,7 +20,8 @@ dependencies:
   logger: ^1.2.0
   # For responsive design
   flutter_screenutil: ^5.9.0
-  
+  google_maps_flutter: ^2.5.0
+
   # For state management (if needed)
   provider: ^6.1.1
   flutter_animate: ^4.5.0

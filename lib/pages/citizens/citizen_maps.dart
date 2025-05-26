@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:async';
 
 class CitizenMapsPage extends StatefulWidget {
   const CitizenMapsPage({super.key});
@@ -11,6 +13,21 @@ class CitizenMapsPage extends StatefulWidget {
 class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
+  
+  // Google Maps & Location Variables
+  GoogleMapController? _mapController;
+  Timer? _locationTimer;
+  bool _isSimulating = false;
+  int _currentLocationIndex = 0;
+  
+  // Marina Bay Sands single point simulation
+  final LatLng _marinaBaySands = LatLng(1.2834, 103.8607); // Marina Bay Sands main entrance
+  
+  // Current simulated location
+  LatLng _currentLocation = LatLng(1.2834, 103.8607); // Marina Bay Sands
+  
+  // Map markers
+  Set<Marker> _markers = {};
 
   @override
   void initState() {
@@ -23,11 +40,84 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
       CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
     );
     _animationController.forward();
+    
+    _initializeMarkers();
+  }
+
+  void _initializeMarkers() {
+    _markers = {
+      Marker(
+        markerId: MarkerId('current_location'),
+        position: _currentLocation,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        infoWindow: InfoWindow(
+          title: 'Your Location',
+          snippet: 'Marina Bay Sands Area',
+        ),
+      ),
+      // Safety locations around Marina Bay Sands
+      Marker(
+        markerId: MarkerId('police_station'),
+        position: LatLng(1.2810, 103.8590),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+        infoWindow: InfoWindow(
+          title: 'Marina Bay Police Post',
+          snippet: '0.3 km away',
+        ),
+      ),
+      Marker(
+        markerId: MarkerId('hospital'),
+        position: LatLng(1.2800, 103.8550),
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueGreen),
+        infoWindow: InfoWindow(
+          title: 'Raffles Hospital',
+          snippet: '0.8 km away',
+        ),
+      ),
+    };
+  }
+
+  void _startLocationSimulation() {
+    if (_isSimulating) return;
+    
+    setState(() {
+      _isSimulating = true;
+      _currentLocation = _marinaBaySands;
+      _updateCurrentLocationMarker();
+    });
+    
+    // Animate camera to Marina Bay Sands
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(_marinaBaySands, 16.0),
+    );
+  }
+
+  void _stopLocationSimulation() {
+    _locationTimer?.cancel();
+    setState(() {
+      _isSimulating = false;
+    });
+  }
+
+  void _updateCurrentLocationMarker() {
+    _markers.removeWhere((marker) => marker.markerId.value == 'current_location');
+    _markers.add(
+      Marker(
+        markerId: MarkerId('current_location'),
+        position: _currentLocation,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        infoWindow: InfoWindow(
+          title: 'Your Location',
+          snippet: 'Marina Bay Sands Area',
+        ),
+      ),
+    );
   }
 
   @override
   void dispose() {
     _animationController.dispose();
+    _locationTimer?.cancel();
     super.dispose();
   }
 
@@ -48,6 +138,15 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: Icon(
+              _isSimulating ? Icons.stop : Icons.play_arrow,
+              color: _isSimulating ? Colors.red : Colors.green,
+            ),
+            onPressed: _isSimulating ? _stopLocationSimulation : _startLocationSimulation,
+          ),
+        ],
       ),
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -79,12 +178,34 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            "View safety information and navigate your community",
-            style: GoogleFonts.poppins(
-              color: Colors.grey[700],
-              fontSize: 16,
-            ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  "View safety information and navigate your community",
+                  style: GoogleFonts.poppins(
+                    color: Colors.grey[700],
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+              if (_isSimulating)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    "GPS Active",
+                    style: GoogleFonts.poppins(
+                      color: Colors.green[700],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -131,17 +252,12 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
             ),
           ),
           
-          // Map Container
+          // Real Google Map Container
           Container(
             width: double.infinity,
             height: 300,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF4CAF50), Color(0xFF2E7D32)],
-              ),
               boxShadow: [
                 BoxShadow(
                   color: const Color(0xFF4CAF50).withOpacity(0.3),
@@ -152,95 +268,28 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(20),
-              child: Stack(
-                children: [
-                  // Map placeholder
-                  Container(
-                    width: double.infinity,
-                    height: double.infinity,
-                    color: const Color(0xFFEBF3EB),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.map_outlined,
-                          size: 70,
-                          color: Colors.green[700]?.withOpacity(0.5),
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          "MAP VIEW",
-                          style: GoogleFonts.poppins(
-                            color: Colors.green[800],
-                            fontSize: 20,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  // Map controls overlay
-                  Positioned(
-                    right: 16,
-                    bottom: 16,
-                    child: Column(
-                      children: [
-                        _buildMapControlButton(Icons.add, () {}),
-                        const SizedBox(height: 12),
-                        _buildMapControlButton(Icons.remove, () {}),
-                        const SizedBox(height: 12),
-                        _buildMapControlButton(Icons.my_location, () {}),
-                      ],
-                    ),
-                  ),
-                  
-                  // Map legend overlay
-                  Positioned(
-                    left: 16,
-                    top: 16,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 5,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 10,
-                            height: 10,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.green[700],
-                            ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            "Safe Area",
-                            style: GoogleFonts.poppins(
-                              color: Colors.grey[800],
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: _currentLocation,
+                  zoom: 16.0,
+                ),
+                onMapCreated: (GoogleMapController controller) {
+                  _mapController = controller;
+                },
+                markers: _markers,
+                myLocationEnabled: false,
+                myLocationButtonEnabled: false,
+                mapType: MapType.normal,
+                compassEnabled: true,
+                rotateGesturesEnabled: true,
+                scrollGesturesEnabled: true,
+                tiltGesturesEnabled: true,
+                zoomGesturesEnabled: true,
               ),
             ),
           ),
           
-          // Map status bar
+          // Map status bar with current location info
           Container(
             margin: const EdgeInsets.only(top: 16),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -267,7 +316,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.shield_outlined,
+                        Icons.location_on,
                         color: Colors.green[700],
                         size: 16,
                       ),
@@ -277,7 +326,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Current Area Status",
+                          "Current Location",
                           style: GoogleFonts.poppins(
                             color: Colors.grey[800],
                             fontSize: 12,
@@ -285,7 +334,7 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                           ),
                         ),
                         Text(
-                          "Safe - No Recent Incidents",
+                          "Marina Bay Sands, Singapore",
                           style: GoogleFonts.poppins(
                             color: Colors.green[700],
                             fontSize: 14,
@@ -296,18 +345,25 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
                     ),
                   ],
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE8F5E9),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    "Details",
-                    style: GoogleFonts.poppins(
-                      color: Colors.green[700],
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+                GestureDetector(
+                  onTap: () {
+                    _mapController?.animateCamera(
+                      CameraUpdate.newLatLngZoom(_currentLocation, 18.0),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8F5E9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      "Center",
+                      style: GoogleFonts.poppins(
+                        color: Colors.green[700],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ),
@@ -319,39 +375,24 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
     );
   }
 
-  Widget _buildMapControlButton(IconData icon, VoidCallback onPressed) {
-    return Container(
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 5,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: const Color(0xFF4CAF50)),
-        onPressed: onPressed,
-      ),
-    );
-  }
-
   Widget _buildMapCategories() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            "Map Layers",
-            style: GoogleFonts.poppins(
-              color: const Color(0xFF1E293B),
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Map Layers",
+                style: GoogleFonts.poppins(
+                  color: const Color(0xFF1E293B),
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           SingleChildScrollView(
@@ -428,22 +469,22 @@ class _CitizenMapsPageState extends State<CitizenMapsPage> with SingleTickerProv
           ),
           const SizedBox(height: 16),
           _buildNearbyLocationCard(
-            "Central Police Station",
-            "1.2 miles away",
+            "Marina Bay Police Post",
+            "0.3 km away",
             Icons.local_police_outlined,
             const Color(0xFF4481EB),
           ),
           const SizedBox(height: 12),
           _buildNearbyLocationCard(
-            "Community Hospital",
-            "2.5 miles away",
+            "Raffles Hospital",
+            "0.8 km away",
             Icons.local_hospital_outlined,
             const Color(0xFFE91E63),
           ),
           const SizedBox(height: 12),
           _buildNearbyLocationCard(
-            "Downtown Fire Station",
-            "0.8 miles away",
+            "Marina Bay Fire Station",
+            "1.2 km away",
             Icons.fire_extinguisher,
             const Color(0xFFFF5722),
           ),

@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# API Keys and Secrets (ADDED FOR SECURITY)
+android/local.properties
+**/local.properties
+.env
+*.env
+**/.env
+google-services.json
+ios/Runner/GoogleService-Info.plist
