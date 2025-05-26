@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'starting_page.dart';
-
 
 class CitizenHomePage extends StatefulWidget {
   const CitizenHomePage({super.key});
@@ -34,61 +31,27 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
     super.dispose();
   }
 
-  void _logout() async {
+  // Simple logout function to replace AuthUtils.logout
+  void _logout() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            'Logout',
-            style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-          ),
-          content: Text(
-            'Are you sure you want to logout?',
-            style: GoogleFonts.poppins(),
-          ),
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to logout?'),
           actions: [
             TextButton(
-              child: Text(
-                'Cancel',
-                style: GoogleFonts.poppins(color: Colors.grey),
-              ),
+              child: const Text('Cancel'),
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
             TextButton(
-              child: Text(
-                'Logout',
-                style: GoogleFonts.poppins(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              onPressed: () async {
+              child: const Text('Logout'),
+              onPressed: () {
                 Navigator.of(context).pop();
-                try {
-                  // Import Firebase Auth and sign out properly
-                  await FirebaseAuth.instance.signOut();
-                  if (context.mounted) {
-                    // Navigate back to starting page using MaterialPageRoute
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(builder: (context) => const StartingPage()),
-                      (route) => false,
-                    );
-                  }
-                } catch (e) {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error signing out: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                }
+                // Navigate back to login or clear user session
+                Navigator.of(context).pushReplacementNamed('/login');
               },
             ),
           ],
@@ -99,8 +62,6 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFC),
       appBar: AppBar(
@@ -116,9 +77,9 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
         elevation: 0,
         centerTitle: true,
         actions: [
-          // Profile icon
+          // Profile icon (already exists)
           Padding(
-            padding: const EdgeInsets.only(right: 8.0),
+            padding: const EdgeInsets.only(right: 8.0), // reduced padding to make room for logout
             child: Hero(
               tag: 'profileAvatar',
               child: Material(
@@ -153,7 +114,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
             ),
           ),
           
-          // Logout icon button
+          // Added logout icon button
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
@@ -188,7 +149,6 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
   }
 
   Widget _buildHeaderSection(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     return Padding(
       padding: const EdgeInsets.only(left: 24, right: 24, top: 16, bottom: 8),
       child: Column(
@@ -206,7 +166,7 @@ class _CitizenHomePageState extends State<CitizenHomePage> with SingleTickerProv
           Row(
             children: [
               Text(
-                user?.email?.split('@')[0] ?? "User",
+                "Alex",
                 style: GoogleFonts.poppins(
                   color: const Color(0xFF1E293B),
                   fontSize: 28,

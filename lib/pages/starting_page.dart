@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-// Import your different stakeholder pages here
-// import 'pages/995_operator_home.dart';
-// import 'pages/ambulance_dispatchers_home.dart';
-// import 'pages/citizen_home.dart';
+import 'login.dart'; // Import your login page
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+// Define the UserRole enum to match your main.dart
+enum UserRole {
+  citizen,
+  ambulanceDispatcher,
+  operator995,
+}
+
+class StartingPage extends StatelessWidget {
+  const StartingPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +32,7 @@ class LoginPage extends StatelessWidget {
                       width: 80,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF4481EB).withOpacity(0.1),
+                        color: const Color(0xFF4481EB).withValues(alpha: 0.1),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -67,7 +71,7 @@ class LoginPage extends StatelessWidget {
                 description: "Call center emergency operator",
                 icon: Icons.headset_mic,
                 color: const Color(0xFFEA4335),
-                onTap: () => _navigateToRole(context, "operator"),
+                onTap: () => _navigateToLogin(context, UserRole.operator995),
               ),
               
               const SizedBox(height: 16),
@@ -78,7 +82,7 @@ class LoginPage extends StatelessWidget {
                 description: "First responders and dispatchers",
                 icon: Icons.local_hospital,
                 color: const Color(0xFF4481EB),
-                onTap: () => _navigateToRole(context, "dispatcher"),
+                onTap: () => _navigateToLogin(context, UserRole.ambulanceDispatcher),
               ),
               
               const SizedBox(height: 16),
@@ -89,7 +93,7 @@ class LoginPage extends StatelessWidget {
                 description: "Community member access",
                 icon: Icons.person,
                 color: const Color(0xFF34A853),
-                onTap: () => _navigateToRole(context, "citizen"),
+                onTap: () => _navigateToLogin(context, UserRole.citizen),
               ),
               
               const Spacer(),
@@ -130,7 +134,7 @@ class LoginPage extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -142,7 +146,7 @@ class LoginPage extends StatelessWidget {
               width: 56,
               height: 56,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.1),
+                color: color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -186,50 +190,14 @@ class LoginPage extends StatelessWidget {
     );
   }
   
-  void _navigateToRole(BuildContext context, String role) {
-    // Navigation logic based on user role
-    switch (role) {
-      case "operator":
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => const OperatorHomePage()),
-        // );
-        _showComingSoonDialog(context, "995 Operator");
-        break;
-      case "dispatcher":
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => const DispatcherHomePage()),
-        // );
-        _showComingSoonDialog(context, "Ambulance Dispatcher");
-        break;
-      case "citizen":
-        // Navigator.pushReplacement(
-        //   context,
-        //   MaterialPageRoute(builder: (context) => const CitizenHomePage()),
-        // );
-        _showComingSoonDialog(context, "Citizen");
-        break;
-    }
-  }
-  
-  void _showComingSoonDialog(BuildContext context, String role) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text("$role Interface"),
-          content: Text("The $role interface is being implemented. This would navigate to the appropriate home page."),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text("OK"),
-            ),
-          ],
-        );
-      },
+  void _navigateToLogin(BuildContext context, UserRole role) {
+    // Navigate directly to your existing LoginPage
+    // You can pass the role as a parameter if your LoginPage accepts it
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const LoginPage(), // Replace LoginWithRole with LoginPage
+      ),
     );
   }
 }
