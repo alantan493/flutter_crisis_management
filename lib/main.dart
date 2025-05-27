@@ -1,10 +1,13 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'pages/starting_page.dart';  // Test this import
+import 'pages/starting_page.dart';
+import 'firebase_options.dart'; // Add this import
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform, // Add options parameter
+  );
   runApp(const MyApp());
 }
 
@@ -13,8 +16,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: StartingPage(),  // Try using StartingPage
+    return MaterialApp(
+      home: const StartingPage(),
     );
   }
 }
