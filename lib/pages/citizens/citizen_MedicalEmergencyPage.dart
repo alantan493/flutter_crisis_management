@@ -3,6 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'dart:async';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class CitizenMedicalEmergencyPage extends StatefulWidget {
   const CitizenMedicalEmergencyPage({super.key});
@@ -21,6 +25,16 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
   late PageController _pageController;
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
+  
+  // Firebase instances
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final Uuid _uuid = Uuid();
+  
+  // Upload state
+  bool _isUploading = false;
+  String? _emergencyCaseId;
   
   // Form controllers
   final TextEditingController _nricController = TextEditingController();
@@ -55,6 +69,9 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       ),
     );
     _animationController.repeat(reverse: true);
+    
+    // Generate a unique case ID
+    _emergencyCaseId = _uuid.v4();
     
     // Add initial transcript message
     _transcript.add({
@@ -139,6 +156,105 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('ID photo added'), duration: Duration(seconds: 1))
       );
+    }
+  }
+
+  // New function to upload images to Firebase Storage
+  Future<List<String>> _uploadImages(List<XFile> images, String folder) async {
+    List<String> downloadUrls = [];
+    
+    for (var image in images) {
+      // Create a unique filename
+      final String fileName = '${_emergencyCaseId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = _storage.ref().child('emergency_cases/$folder/$fileName');
+      
+      try {
+        // Upload the file
+        await storageRef.putFile(File(image.path));
+        
+        // Get the download URL
+        final String downloadUrl = await storageRef.getDownloadURL();
+        downloadUrls.add(downloadUrl);
+      } catch (e) {
+        print('Error uploading image: $e');
+      }
+    }
+    
+    return downloadUrls;
+  }
+
+  // Function to save all emergency data to Firestore
+  Future<void> _uploadEmergencyData() async {
+    if (_isUploading) return;
+    
+    setState(() {
+      _isUploading = true;
+    });
+    
+    try {
+      // Get current user ID (or anonymous ID)
+      String userId = 'anonymous';
+      if (_auth.currentUser != null) {
+        userId = _auth.currentUser!.uid;
+      }
+      
+      // Upload images and get download URLs
+      final List<String> idImageUrls = await _uploadImages(_identificationImages, 'id_images');
+      final List<String> woundImageUrls = await _uploadImages(_woundImages, 'wound_images');
+      
+      // Create transcript data for Firestore
+      final List<Map<String, dynamic>> transcriptData = _transcript.map((item) => {
+        'speaker': item['speaker'],
+        'text': item['text'],
+        'isCritical': item['isCritical'],
+        'timestamp': DateTime.now().toIso8601String(),
+      }).toList();
+      
+      // Create Firestore document
+      await _firestore.collection('emergency_cases').doc(_emergencyCaseId).set({
+        'caseId': _emergencyCaseId,
+        'userId': userId,
+        'timestamp': FieldValue.serverTimestamp(),
+        'callDurationSeconds': _callDurationInSeconds,
+        'emergencyType': 'Medical',
+        'victimDetails': {
+          'nric': _nricController.text.trim(),
+          'name': _nameController.text.trim(),
+          'age': _ageController.text.isEmpty ? null : int.tryParse(_ageController.text.trim()),
+          'idImages': idImageUrls,
+        },
+        'medicalDetails': {
+          'woundImages': woundImageUrls,
+          'assessment': _assessmentSummary,
+          'recommendations': _recommendations,
+        },
+        'transcript': transcriptData,
+        'status': 'submitted',
+      });
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Emergency data uploaded successfully'),
+            backgroundColor: Colors.green,
+          )
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to upload emergency data: $e'),
+            backgroundColor: Colors.red,
+          )
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploading = false;
+        });
+      }
     }
   }
 
@@ -296,94 +412,131 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
             color: Colors.white,
             boxShadow: [BoxShadow(color: Colors.black.withAlpha(25), blurRadius: 10, offset: const Offset(0, -2))],
           ),
-          child: Row(
+          child: Column(
             children: [
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade300),
-                  ),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: _toggleRecording,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _isRecording ? Colors.green.shade100 : Colors.transparent,
+              // New upload button
+              if (_currentPageIndex == 1) // Show upload button only on the images tab
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ElevatedButton.icon(
+                    onPressed: _isUploading ? null : _uploadEmergencyData,
+                    icon: _isUploading 
+                      ? Container(
+                          width: 24,
+                          height: 24,
+                          padding: const EdgeInsets.all(2),
+                          child: const CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
                           ),
-                          child: Icon(
-                            _isRecording ? Icons.mic : Icons.mic_off,
-                            color: _isRecording ? Colors.green : Colors.grey,
-                          ),
-                        ),
+                        )
+                      : const Icon(Icons.upload_file),
+                    label: Text(
+                      _isUploading ? 'Uploading...' : 'Upload Emergency Data',
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.w500,
                       ),
-                      Container(width: 8),
-                      Expanded(
-                        child: Text(
-                          _isRecording ? "Recording... Speak clearly" : "Tap microphone to speak",
-                          style: GoogleFonts.poppins(
-                            color: _isRecording ? Colors.green.shade700 : Colors.grey.shade600,
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      disabledBackgroundColor: primaryColor.withOpacity(0.7),
+                    ),
                   ),
                 ),
-              ),
-              Container(width: 8),
-              Container(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: primaryColor.withAlpha(25),
-                ),
-                child: IconButton(
-                  icon: Icon(Icons.priority_high, color: primaryColor),
-                  onPressed: () {
-                    // Show NRIC dialog
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('NRIC Information'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextField(
-                              controller: _nricController,
-                              decoration: const InputDecoration(
-                                labelText: 'Victim\'s NRIC/ID',
-                                hintText: 'Enter NRIC number if available',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.perm_identity),
+                
+              Row(
+                children: [
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Row(
+                        children: [
+                          GestureDetector(
+                            onTap: _toggleRecording,
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: _isRecording ? Colors.green.shade100 : Colors.transparent,
+                              ),
+                              child: Icon(
+                                _isRecording ? Icons.mic : Icons.mic_off,
+                                color: _isRecording ? Colors.green : Colors.grey,
                               ),
                             ),
-                            Container(height: 16),
-                            const Text('This will help retrieve the victim\'s medical history'),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancel'),
                           ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('NRIC submitted successfully'))
-                              );
-                            },
-                            child: const Text('Submit'),
+                          Container(width: 8),
+                          Expanded(
+                            child: Text(
+                              _isRecording ? "Recording... Speak clearly" : "Tap microphone to speak",
+                              style: GoogleFonts.poppins(
+                                color: _isRecording ? Colors.green.shade700 : Colors.grey.shade600,
+                              ),
+                            ),
                           ),
                         ],
                       ),
-                    );
-                  },
-                ),
+                    ),
+                  ),
+                  Container(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: primaryColor.withAlpha(25),
+                    ),
+                    child: IconButton(
+                      icon: Icon(Icons.priority_high, color: primaryColor),
+                      onPressed: () {
+                        // Show NRIC dialog
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('NRIC Information'),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                TextField(
+                                  controller: _nricController,
+                                  decoration: const InputDecoration(
+                                    labelText: 'Victim\'s NRIC/ID',
+                                    hintText: 'Enter NRIC number if available',
+                                    border: OutlineInputBorder(),
+                                    prefixIcon: Icon(Icons.perm_identity),
+                                  ),
+                                ),
+                                Container(height: 16),
+                                const Text('This will help retrieve the victim\'s medical history'),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                child: const Text('Cancel'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('NRIC submitted successfully'))
+                                  );
+                                },
+                                child: const Text('Submit'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
