@@ -12,10 +12,13 @@ class CitizenMedicalEmergencyPage extends StatefulWidget {
   const CitizenMedicalEmergencyPage({super.key});
 
   @override
-  State<CitizenMedicalEmergencyPage> createState() => _CitizenMedicalEmergencyPageState();
+  State<CitizenMedicalEmergencyPage> createState() =>
+      _CitizenMedicalEmergencyPageState();
 }
 
-class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPage> with SingleTickerProviderStateMixin {
+class _CitizenMedicalEmergencyPageState
+    extends State<CitizenMedicalEmergencyPage>
+    with SingleTickerProviderStateMixin {
   // Core state variables
   bool _isCallInProgress = false;
   bool _isRecording = false;
@@ -25,30 +28,31 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
   late PageController _pageController;
   late AnimationController _animationController;
   late Animation<double> _pulseAnimation;
-  
+
   // Firebase instances
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final Uuid _uuid = Uuid();
-  
+
   // Upload state
   bool _isUploading = false;
   String? _emergencyCaseId;
-  
+
   // Form controllers
   final TextEditingController _nricController = TextEditingController();
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
-  
+
   // Image data
   final ImagePicker _picker = ImagePicker();
   final List<XFile> _identificationImages = [];
   final List<XFile> _woundImages = [];
-  
+
   // Mock data
   final List<Map<String, dynamic>> _transcript = [];
-  final String _assessmentSummary = "Head injury with bleeding. Victim conscious but dizzy.";
+  final String _assessmentSummary =
+      "Head injury with bleeding. Victim conscious but dizzy.";
   final List<String> _recommendations = [
     "Apply gentle pressure with clean cloth. Keep victim still.",
     "Monitor for confusion, severe headache, or vomiting."
@@ -69,17 +73,17 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       ),
     );
     _animationController.repeat(reverse: true);
-    
+
     // Generate a unique case ID
     _emergencyCaseId = _uuid.v4();
-    
+
     // Add initial transcript message
     _transcript.add({
-      "speaker": "Operator", 
+      "speaker": "Operator",
       "text": "Emergency services. What's your emergency?",
       "isCritical": false,
     });
-    
+
     // Start call immediately
     _startCall();
   }
@@ -99,21 +103,31 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
     setState(() {
       _isCallInProgress = true;
       _callDurationInSeconds = 0;
-      
+
       _callDurationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
         setState(() {
           _callDurationInSeconds++;
         });
-        
+
         // Simulate transcript updates
         if (_callDurationInSeconds == 3) {
-          _addTranscriptMessage("You", "Someone fell and hit their head. They're bleeding from the forehead.", true);
+          _addTranscriptMessage(
+              "You",
+              "Someone fell and hit their head. They're bleeding from the forehead.",
+              true);
         } else if (_callDurationInSeconds == 8) {
-          _addTranscriptMessage("Operator", "Is the person conscious? How old are they?", false);
+          _addTranscriptMessage(
+              "Operator", "Is the person conscious? How old are they?", false);
         } else if (_callDurationInSeconds == 13) {
-          _addTranscriptMessage("You", "Yes, they're conscious but dizzy. It's an adult, about 40 years old.", true);
+          _addTranscriptMessage(
+              "You",
+              "Yes, they're conscious but dizzy. It's an adult, about 40 years old.",
+              true);
         } else if (_callDurationInSeconds == 18) {
-          _addTranscriptMessage("Operator", "Is there heavy bleeding? Please check if the blood is pulsing or flowing steadily.", false);
+          _addTranscriptMessage(
+              "Operator",
+              "Is there heavy bleeding? Please check if the blood is pulsing or flowing steadily.",
+              false);
         }
       });
     });
@@ -128,22 +142,21 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       });
     });
   }
-  
+
   void _toggleRecording() {
     setState(() {
       _isRecording = !_isRecording;
     });
   }
-  
+
   Future<void> _pickWoundImage() async {
     final XFile? image = await _picker.pickImage(source: ImageSource.camera);
     if (image != null && mounted) {
       setState(() {
         _woundImages.add(image);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Photo added'), duration: Duration(seconds: 1))
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Photo added'), duration: Duration(seconds: 1)));
     }
   }
 
@@ -153,25 +166,26 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       setState(() {
         _identificationImages.add(image);
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('ID photo added'), duration: Duration(seconds: 1))
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('ID photo added'), duration: Duration(seconds: 1)));
     }
   }
 
   // New function to upload images to Firebase Storage
   Future<List<String>> _uploadImages(List<XFile> images, String folder) async {
     List<String> downloadUrls = [];
-    
+
     for (var image in images) {
       // Create a unique filename
-      final String fileName = '${_emergencyCaseId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef = _storage.ref().child('emergency_cases/$folder/$fileName');
-      
+      final String fileName =
+          '${_emergencyCaseId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef =
+          _storage.ref().child('emergency_cases/$folder/$fileName');
+
       try {
         // Upload the file
         await storageRef.putFile(File(image.path));
-        
+
         // Get the download URL
         final String downloadUrl = await storageRef.getDownloadURL();
         downloadUrls.add(downloadUrl);
@@ -179,75 +193,134 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
         print('Error uploading image: $e');
       }
     }
-    
+
     return downloadUrls;
   }
 
   // Function to save all emergency data to Firestore
-  Future<void> _uploadEmergencyData() async {
+  Future<void> _uploadEmergencyData({bool isFinalUpload = false}) async {
     if (_isUploading) return;
-    
+
     setState(() {
       _isUploading = true;
     });
-    
+
     try {
       // Get current user ID (or anonymous ID)
       String userId = 'anonymous';
       if (_auth.currentUser != null) {
         userId = _auth.currentUser!.uid;
       }
-      
-      // Upload images and get download URLs
-      final List<String> idImageUrls = await _uploadImages(_identificationImages, 'id_images');
-      final List<String> woundImageUrls = await _uploadImages(_woundImages, 'wound_images');
-      
-      // Create transcript data for Firestore
-      final List<Map<String, dynamic>> transcriptData = _transcript.map((item) => {
-        'speaker': item['speaker'],
-        'text': item['text'],
-        'isCritical': item['isCritical'],
-        'timestamp': DateTime.now().toIso8601String(),
-      }).toList();
-      
-      // Create Firestore document
-      await _firestore.collection('emergency_cases').doc(_emergencyCaseId).set({
-        'caseId': _emergencyCaseId,
-        'userId': userId,
-        'timestamp': FieldValue.serverTimestamp(),
-        'callDurationSeconds': _callDurationInSeconds,
-        'emergencyType': 'Medical',
-        'victimDetails': {
+
+      // Create base data map
+      final Map<String, dynamic> caseData = {
+        'lastUpdated': FieldValue.serverTimestamp(),
+      };
+
+      // Add basic data if this is first upload or final upload
+      if (isFinalUpload) {
+        // Add call end status for final upload
+        caseData['status'] = 'completed';
+        caseData['callEndedAt'] = FieldValue.serverTimestamp();
+        caseData['callDurationSeconds'] = _callDurationInSeconds;
+
+        // Add final case summary
+        caseData['finalAssessment'] = _assessmentSummary;
+        caseData['finalRecommendations'] = _recommendations;
+      }
+
+      // Upload images only if there are new ones to upload
+      if (_identificationImages.isNotEmpty) {
+        final List<String> idImageUrls =
+            await _uploadImages(_identificationImages, 'id_images');
+        caseData['victimDetails'] = {
           'nric': _nricController.text.trim(),
           'name': _nameController.text.trim(),
-          'age': _ageController.text.isEmpty ? null : int.tryParse(_ageController.text.trim()),
+          'age': _ageController.text.isEmpty
+              ? null
+              : int.tryParse(_ageController.text.trim()),
           'idImages': idImageUrls,
-        },
-        'medicalDetails': {
+        };
+      } else if (_nricController.text.isNotEmpty ||
+          _nameController.text.isNotEmpty ||
+          _ageController.text.isNotEmpty) {
+        // Only update text fields if images are empty but text fields have data
+        caseData['victimDetails'] = {
+          'nric': _nricController.text.trim(),
+          'name': _nameController.text.trim(),
+          'age': _ageController.text.isEmpty
+              ? null
+              : int.tryParse(_ageController.text.trim()),
+        };
+      }
+
+      // Upload wound images if available
+      if (_woundImages.isNotEmpty) {
+        final List<String> woundImageUrls =
+            await _uploadImages(_woundImages, 'wound_images');
+        caseData['medicalDetails'] = {
           'woundImages': woundImageUrls,
           'assessment': _assessmentSummary,
           'recommendations': _recommendations,
-        },
-        'transcript': transcriptData,
-        'status': 'submitted',
-      });
-      
+        };
+      }
+
+      // Create transcript data for Firestore if this is first upload or final upload
+      if (_transcript.isNotEmpty) {
+        final List<Map<String, dynamic>> transcriptData = _transcript
+            .map((item) => {
+                  'speaker': item['speaker'],
+                  'text': item['text'],
+                  'isCritical': item['isCritical'],
+                  'timestamp': DateTime.now().toIso8601String(),
+                })
+            .toList();
+
+        caseData['transcript'] = transcriptData;
+      }
+
+      // First check if the document exists
+      final docRef =
+          _firestore.collection('emergency_cases').doc(_emergencyCaseId);
+      final docSnapshot = await docRef.get();
+
+      if (!docSnapshot.exists) {
+        // Document doesn't exist, create it with initial data
+        await docRef.set({
+          'caseId': _emergencyCaseId,
+          'userId': userId,
+          'createdAt': FieldValue.serverTimestamp(),
+          'emergencyType': 'Medical',
+          'status': 'active',
+          ...caseData
+        });
+      } else {
+        // Document exists, update it
+        await docRef.update(caseData);
+      }
+
+      // Clear uploaded images to prevent re-uploading
+      if (_identificationImages.isNotEmpty) {
+        _identificationImages.clear();
+      }
+      if (_woundImages.isNotEmpty) {
+        _woundImages.clear();
+      }
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Emergency data uploaded successfully'),
-            backgroundColor: Colors.green,
-          )
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(isFinalUpload
+              ? 'Emergency case completed and uploaded'
+              : 'Emergency data updated successfully'),
+          backgroundColor: Colors.green,
+        ));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload emergency data: $e'),
-            backgroundColor: Colors.red,
-          )
-        );
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to upload emergency data: $e'),
+          backgroundColor: Colors.red,
+        ));
       }
     } finally {
       if (mounted) {
@@ -259,26 +332,89 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
   }
 
   void _endCall() {
+    // Use a simpler approach that doesn't store contexts across async boundaries
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => AlertDialog(
         title: const Text('End Call?'),
         content: const Text('Are you sure you want to end the emergency call?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(); // Go back to citizen_emergency.dart
+              // Close the confirmation dialog first
+              Navigator.of(dialogContext).pop();
+
+              // Now handle the upload with a new dialog
+              _handleEndCallAndUpload();
             },
             child: const Text('End Call'),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _handleEndCallAndUpload() async {
+    // Show the loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext loadingContext) => const AlertDialog(
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('Uploading final case summary...')
+          ],
+        ),
+      ),
+    );
+
+    try {
+      // Upload final data
+      await _uploadEmergencyData(isFinalUpload: true);
+
+      // Dismiss loading dialog and get back to previous page
+      if (mounted) {
+        // Using Navigator.pop twice - first for the loading dialog, then for the page
+        Navigator.of(context).pop(); // Close loading dialog
+
+        // Add a small delay to ensure dialog is closed
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Now navigate back to previous page
+        if (mounted) {
+          Navigator.of(context).pop(); // Go back to citizen_emergency.dart
+        }
+      }
+    } catch (e) {
+      // Handle error but still allow navigation
+      if (mounted) {
+        // Pop loading dialog
+        Navigator.of(context).pop();
+
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+
+        // Still navigate back after a slight delay
+        await Future.delayed(const Duration(seconds: 2));
+        if (mounted) {
+          Navigator.of(context).pop(); // Go back to citizen_emergency.dart
+        }
+      }
+    }
   }
 
   String _formatDuration(int seconds) {
@@ -290,7 +426,7 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
   @override
   Widget build(BuildContext context) {
     const emergencyRed = Color(0xFFEA4335);
-    
+
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
@@ -322,28 +458,35 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 5)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 5)
+            ],
           ),
           child: Row(
             children: [
               AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _pulseAnimation.value,
-                    child: Container(
-                      width: 50,
-                      height: 50,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        boxShadow: [BoxShadow(color: primaryColor.withAlpha(76), blurRadius: 10, spreadRadius: 2)],
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _pulseAnimation.value,
+                      child: Container(
+                        width: 50,
+                        height: 50,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                                color: primaryColor.withAlpha(76),
+                                blurRadius: 10,
+                                spreadRadius: 2)
+                          ],
+                        ),
+                        child: Icon(Icons.phone_in_talk,
+                            size: 24, color: primaryColor),
                       ),
-                      child: Icon(Icons.phone_in_talk, size: 24, color: primaryColor),
-                    ),
-                  );
-                }
-              ),
+                    );
+                  }),
               Container(width: 16),
               Expanded(
                 child: Column(
@@ -351,17 +494,20 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                   children: [
                     Text(
                       'Emergency Call (995)',
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.bold),
+                      style: GoogleFonts.poppins(
+                          fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     Text(
                       'Call Duration: ${_formatDuration(_callDurationInSeconds)}',
-                      style: GoogleFonts.poppins(fontSize: 14, color: Colors.grey[600]),
+                      style: GoogleFonts.poppins(
+                          fontSize: 14, color: Colors.grey[600]),
                     ),
                   ],
                 ),
               ),
               Container(
-                decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.red.shade50),
+                decoration: BoxDecoration(
+                    shape: BoxShape.circle, color: Colors.red.shade50),
                 child: IconButton(
                   icon: const Icon(Icons.call_end, color: Colors.red),
                   onPressed: _endCall,
@@ -370,12 +516,14 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
             ],
           ),
         ),
-        
+
         // Tab bar
         Container(
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 3)],
+            boxShadow: [
+              BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 3)
+            ],
           ),
           child: Row(
             children: [
@@ -388,7 +536,7 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
             ],
           ),
         ),
-        
+
         // Page content
         Expanded(
           child: PageView(
@@ -404,34 +552,40 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
             ],
           ),
         ),
-        
+
         // Recording button and action bar
         Container(
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            boxShadow: [BoxShadow(color: Colors.black.withAlpha(25), blurRadius: 10, offset: const Offset(0, -2))],
+            boxShadow: [
+              BoxShadow(
+                  color: Colors.black.withAlpha(25),
+                  blurRadius: 10,
+                  offset: const Offset(0, -2))
+            ],
           ),
           child: Column(
             children: [
               // New upload button
-              if (_currentPageIndex == 1) // Show upload button only on the images tab
+              if (_currentPageIndex ==
+                  1) // Show upload button only on the images tab
                 Container(
                   width: double.infinity,
                   margin: const EdgeInsets.only(bottom: 8),
                   child: ElevatedButton.icon(
                     onPressed: _isUploading ? null : _uploadEmergencyData,
-                    icon: _isUploading 
-                      ? Container(
-                          width: 24,
-                          height: 24,
-                          padding: const EdgeInsets.all(2),
-                          child: const CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Icon(Icons.upload_file),
+                    icon: _isUploading
+                        ? Container(
+                            width: 24,
+                            height: 24,
+                            padding: const EdgeInsets.all(2),
+                            child: const CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : const Icon(Icons.upload_file),
                     label: Text(
                       _isUploading ? 'Uploading...' : 'Upload Emergency Data',
                       style: GoogleFonts.poppins(
@@ -446,7 +600,7 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                     ),
                   ),
                 ),
-                
+
               Row(
                 children: [
                   Expanded(
@@ -465,20 +619,27 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: _isRecording ? Colors.green.shade100 : Colors.transparent,
+                                color: _isRecording
+                                    ? Colors.green.shade100
+                                    : Colors.transparent,
                               ),
                               child: Icon(
                                 _isRecording ? Icons.mic : Icons.mic_off,
-                                color: _isRecording ? Colors.green : Colors.grey,
+                                color:
+                                    _isRecording ? Colors.green : Colors.grey,
                               ),
                             ),
                           ),
                           Container(width: 8),
                           Expanded(
                             child: Text(
-                              _isRecording ? "Recording... Speak clearly" : "Tap microphone to speak",
+                              _isRecording
+                                  ? "Recording... Speak clearly"
+                                  : "Tap microphone to speak",
                               style: GoogleFonts.poppins(
-                                color: _isRecording ? Colors.green.shade700 : Colors.grey.shade600,
+                                color: _isRecording
+                                    ? Colors.green.shade700
+                                    : Colors.grey.shade600,
                               ),
                             ),
                           ),
@@ -513,7 +674,8 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                                   ),
                                 ),
                                 Container(height: 16),
-                                const Text('This will help retrieve the victim\'s medical history'),
+                                const Text(
+                                    'This will help retrieve the victim\'s medical history'),
                               ],
                             ),
                             actions: [
@@ -525,8 +687,9 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                                 onPressed: () {
                                   Navigator.of(context).pop();
                                   ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('NRIC submitted successfully'))
-                                  );
+                                      const SnackBar(
+                                          content: Text(
+                                              'NRIC submitted successfully')));
                                 },
                                 child: const Text('Submit'),
                               ),
@@ -544,7 +707,7 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       ],
     );
   }
-  
+
   Widget _buildTabButton(int index, IconData icon, String label) {
     final bool isSelected = _currentPageIndex == index;
     return InkWell(
@@ -593,14 +756,15 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
       children: [
         // Transcript section
         Expanded(
-          flex: 70, 
+          flex: 70,
           child: Container(
             color: Colors.grey.shade50,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   child: Row(
                     children: [
                       Container(
@@ -609,11 +773,13 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                           color: Colors.grey.shade300,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.chat, size: 18, color: Colors.black54),
+                        child: const Icon(Icons.chat,
+                            size: 18, color: Colors.black54),
                       ),
                       Container(width: 8),
-                      Text("Call Transcript", 
-                        style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                      Text("Call Transcript",
+                          style: GoogleFonts.poppins(
+                              fontSize: 18, fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
@@ -624,7 +790,7 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                     itemBuilder: (context, index) {
                       final item = _transcript[index];
                       return _buildTranscriptBubble(
-                        item["speaker"], 
+                        item["speaker"],
                         item["text"],
                         isCritical: item["isCritical"],
                       );
@@ -635,12 +801,12 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
             ),
           ),
         ),
-        
+
         Container(height: 1, color: Colors.grey.shade300),
-        
+
         // Assessment section
         Expanded(
-          flex: 30, 
+          flex: 30,
           child: Container(
             color: Colors.grey.shade50,
             padding: const EdgeInsets.all(12),
@@ -655,24 +821,24 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                         color: const Color(0xFF4481EB).withAlpha(25),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.assessment, size: 18, color: Color(0xFF4481EB)),
+                      child: const Icon(Icons.assessment,
+                          size: 18, color: Color(0xFF4481EB)),
                     ),
                     Container(width: 8),
-                    Text("AI Assessment", 
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                    Text("AI Assessment",
+                        style: GoogleFonts.poppins(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
                   ],
                 ),
-                
                 Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
                   child: Text(
                     _assessmentSummary,
                     style: GoogleFonts.poppins(fontSize: 13),
                   ),
                 ),
-                
                 Divider(color: Colors.grey.shade300),
-                
                 Row(
                   children: [
                     Container(
@@ -681,14 +847,15 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                         color: const Color(0xFFFF9800).withAlpha(25),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.lightbulb, size: 18, color: Color(0xFFFF9800)),
+                      child: const Icon(Icons.lightbulb,
+                          size: 18, color: Color(0xFFFF9800)),
                     ),
                     Container(width: 8),
-                    Text("Recommended Actions", 
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                    Text("Recommended Actions",
+                        style: GoogleFonts.poppins(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
                   ],
                 ),
-                
                 Container(height: 8),
                 Padding(
                   padding: const EdgeInsets.only(left: 4),
@@ -698,11 +865,12 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("1. ", 
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                          Text("1. ",
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
                           Expanded(
-                            child: Text(_recommendations[0], 
-                              style: GoogleFonts.poppins(fontSize: 13)),
+                            child: Text(_recommendations[0],
+                                style: GoogleFonts.poppins(fontSize: 13)),
                           ),
                         ],
                       ),
@@ -710,11 +878,12 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("2. ", 
-                            style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 13)),
+                          Text("2. ",
+                              style: GoogleFonts.poppins(
+                                  fontWeight: FontWeight.w600, fontSize: 13)),
                           Expanded(
-                            child: Text(_recommendations[1], 
-                              style: GoogleFonts.poppins(fontSize: 13)),
+                            child: Text(_recommendations[1],
+                                style: GoogleFonts.poppins(fontSize: 13)),
                           ),
                         ],
                       ),
@@ -747,11 +916,13 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                         color: const Color(0xFF4481EB).withAlpha(25),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.person_pin, size: 18, color: Color(0xFF4481EB)),
+                      child: const Icon(Icons.person_pin,
+                          size: 18, color: Color(0xFF4481EB)),
                     ),
                     Container(width: 8),
-                    Text("Victim Identification", 
-                      style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                    Text("Victim Identification",
+                        style: GoogleFonts.poppins(
+                            fontSize: 18, fontWeight: FontWeight.w600)),
                     const Spacer(),
                     _identificationImages.isEmpty
                         ? ElevatedButton.icon(
@@ -760,14 +931,17 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                             label: const Text("Add ID Photo"),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF4481EB),
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 0),
                               minimumSize: const Size(0, 30),
                             ),
                           )
                         : TextButton.icon(
                             onPressed: _pickIDImage,
-                            icon: Icon(Icons.add_a_photo, size: 14, color: Colors.grey.shade700),
-                            label: Text("Add", style: TextStyle(color: Colors.grey.shade700)),
+                            icon: Icon(Icons.add_a_photo,
+                                size: 14, color: Colors.grey.shade700),
+                            label: Text("Add",
+                                style: TextStyle(color: Colors.grey.shade700)),
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.zero,
                               minimumSize: const Size(0, 30),
@@ -776,7 +950,6 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                   ],
                 ),
                 Container(height: 12),
-                
                 Expanded(
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -788,7 +961,8 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                           margin: const EdgeInsets.only(right: 12),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.grey.shade300, width: 1),
+                            border: Border.all(
+                                color: Colors.grey.shade300, width: 1),
                             boxShadow: [
                               BoxShadow(
                                 color: Colors.black.withAlpha(20),
@@ -797,12 +971,12 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                               ),
                             ],
                             image: DecorationImage(
-                              image: FileImage(File(_identificationImages.last.path)),
+                              image: FileImage(
+                                  File(_identificationImages.last.path)),
                               fit: BoxFit.cover,
                             ),
                           ),
                         ),
-                      
                       Expanded(
                         child: Column(
                           children: [
@@ -819,19 +993,22 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xFF4481EB), width: 2),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFF4481EB), width: 2),
                                 ),
-                                prefixIcon: const Icon(Icons.perm_identity, color: Color(0xFF4481EB)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                prefixIcon: const Icon(Icons.perm_identity,
+                                    color: Color(0xFF4481EB)),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 12),
                               ),
                               style: GoogleFonts.poppins(fontSize: 14),
                             ),
                             Container(height: 8),
-                            
                             TextField(
                               controller: _nameController,
                               decoration: InputDecoration(
@@ -845,19 +1022,22 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xFF4481EB), width: 2),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFF4481EB), width: 2),
                                 ),
-                                prefixIcon: const Icon(Icons.person, color: Color(0xFF4481EB)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                prefixIcon: const Icon(Icons.person,
+                                    color: Color(0xFF4481EB)),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 12),
                               ),
                               style: GoogleFonts.poppins(fontSize: 14),
                             ),
                             Container(height: 8),
-                            
                             TextField(
                               controller: _ageController,
                               decoration: InputDecoration(
@@ -871,14 +1051,18 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: BorderSide(color: Colors.grey.shade300),
+                                  borderSide:
+                                      BorderSide(color: Colors.grey.shade300),
                                 ),
                                 focusedBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(8),
-                                  borderSide: const BorderSide(color: Color(0xFF4481EB), width: 2),
+                                  borderSide: const BorderSide(
+                                      color: Color(0xFF4481EB), width: 2),
                                 ),
-                                prefixIcon: const Icon(Icons.calendar_today, color: Color(0xFF4481EB)),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+                                prefixIcon: const Icon(Icons.calendar_today,
+                                    color: Color(0xFF4481EB)),
+                                contentPadding: const EdgeInsets.symmetric(
+                                    vertical: 12, horizontal: 12),
                               ),
                               style: GoogleFonts.poppins(fontSize: 14),
                               keyboardType: TextInputType.number,
@@ -893,9 +1077,9 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
             ),
           ),
         ),
-        
+
         Container(height: 1, color: Colors.grey.shade300),
-        
+
         // Wounds/symptoms section
         Expanded(
           child: Container(
@@ -914,17 +1098,20 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                             color: const Color(0xFFEA4335).withAlpha(25),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.healing, size: 18, color: Color(0xFFEA4335)),
+                          child: const Icon(Icons.healing,
+                              size: 18, color: Color(0xFFEA4335)),
                         ),
                         Container(width: 8),
-                        Text("Wounds & Symptoms", 
-                          style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                        Text("Wounds & Symptoms",
+                            style: GoogleFonts.poppins(
+                                fontSize: 18, fontWeight: FontWeight.w600)),
                       ],
                     ),
                     ElevatedButton.icon(
                       onPressed: _pickWoundImage,
                       icon: const Icon(Icons.camera_alt, size: 14),
-                      label: Text("Take Photo", 
+                      label: Text(
+                        "Take Photo",
                         style: GoogleFonts.poppins(
                           color: Colors.white,
                           fontWeight: FontWeight.w500,
@@ -933,7 +1120,8 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFEA4335),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 0),
                         minimumSize: const Size(0, 30),
                       ),
                     ),
@@ -942,69 +1130,71 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
                 Container(height: 4),
                 Text(
                   "Take clear photos of injuries to help emergency services",
-                  style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey.shade600),
+                  style: GoogleFonts.poppins(
+                      fontSize: 12, color: Colors.grey.shade600),
                 ),
                 Container(height: 8),
-                
                 Expanded(
                   child: _woundImages.isEmpty
-                    ? Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add_photo_alternate, 
-                              size: 36, color: Colors.grey.shade400),
-                            Container(height: 8),
-                            Text("No wound images yet",
-                              style: GoogleFonts.poppins(fontSize: 12, color: Colors.grey)),
-                          ],
-                        ),
-                      )
-                    : GridView.builder(
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                        ),
-                        itemCount: _woundImages.length,
-                        itemBuilder: (context, index) {
-                          return Stack(
-                            fit: StackFit.expand,
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: Image.file(
-                                  File(_woundImages[index].path),
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: InkWell(
-                                  onTap: () {
-                                    setState(() {
-                                      _woundImages.removeAt(index);
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withAlpha(127),
-                                      borderRadius: const BorderRadius.only(
-                                        bottomLeft: Radius.circular(8),
-                                        topRight: Radius.circular(8),
-                                      ),
-                                    ),
-                                    child: const Icon(Icons.close, 
-                                      color: Colors.white, size: 14),
+                              Icon(Icons.add_photo_alternate,
+                                  size: 36, color: Colors.grey.shade400),
+                              Container(height: 8),
+                              Text("No wound images yet",
+                                  style: GoogleFonts.poppins(
+                                      fontSize: 12, color: Colors.grey)),
+                            ],
+                          ),
+                        )
+                      : GridView.builder(
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 3,
+                            crossAxisSpacing: 8,
+                            mainAxisSpacing: 8,
+                          ),
+                          itemCount: _woundImages.length,
+                          itemBuilder: (context, index) {
+                            return Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: Image.file(
+                                    File(_woundImages[index].path),
+                                    fit: BoxFit.cover,
                                   ),
                                 ),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
+                                Positioned(
+                                  right: 0,
+                                  top: 0,
+                                  child: InkWell(
+                                    onTap: () {
+                                      setState(() {
+                                        _woundImages.removeAt(index);
+                                      });
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withAlpha(127),
+                                        borderRadius: const BorderRadius.only(
+                                          bottomLeft: Radius.circular(8),
+                                          topRight: Radius.circular(8),
+                                        ),
+                                      ),
+                                      child: const Icon(Icons.close,
+                                          color: Colors.white, size: 14),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
                 ),
               ],
             ),
@@ -1014,7 +1204,8 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
     );
   }
 
-  Widget _buildTranscriptBubble(String speaker, String text, {required bool isCritical}) {
+  Widget _buildTranscriptBubble(String speaker, String text,
+      {required bool isCritical}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -1022,13 +1213,15 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
         children: [
           CircleAvatar(
             radius: 12,
-            backgroundColor: speaker == "Operator" 
+            backgroundColor: speaker == "Operator"
                 ? const Color(0xFF4481EB).withAlpha(25)
                 : const Color(0xFFEA4335).withAlpha(25),
             child: Icon(
               speaker == "Operator" ? Icons.headset_mic : Icons.person,
               size: 12,
-              color: speaker == "Operator" ? const Color(0xFF4481EB) : const Color(0xFFEA4335),
+              color: speaker == "Operator"
+                  ? const Color(0xFF4481EB)
+                  : const Color(0xFFEA4335),
             ),
           ),
           Container(width: 8),
@@ -1038,12 +1231,15 @@ class _CitizenMedicalEmergencyPageState extends State<CitizenMedicalEmergencyPag
               children: [
                 Text(
                   speaker,
-                  style: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 12),
+                  style: GoogleFonts.poppins(
+                      fontWeight: FontWeight.w600, fontSize: 12),
                 ),
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: isCritical ? const Color(0xFFEA4335).withAlpha(12) : Colors.white,
+                    color: isCritical
+                        ? const Color(0xFFEA4335).withAlpha(12)
+                        : Colors.white,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.grey.shade200),
                   ),
