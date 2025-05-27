@@ -171,29 +171,72 @@ class _CitizenMedicalEmergencyPageState
     }
   }
 
-  // New function to upload images to Firebase Storage
+  // Improved function to upload images to Firebase Storage
   Future<List<String>> _uploadImages(List<XFile> images, String folder) async {
     List<String> downloadUrls = [];
 
-    for (var image in images) {
-      // Create a unique filename
-      final String fileName =
-          '${_emergencyCaseId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final storageRef =
-          _storage.ref().child('emergency_cases/$folder/$fileName');
+    if (images.isEmpty) {
+      print('No images to upload');
+      return downloadUrls;
+    }
 
+    for (var image in images) {
       try {
-        // Upload the file
-        await storageRef.putFile(File(image.path));
+        // Print image details for debugging
+        print('Uploading image: ${image.path}');
+        print('Image size: ${await File(image.path).length()} bytes');
+
+        // Create a unique filename
+        final String fileName =
+            '${_emergencyCaseId}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+        final storageRef =
+            _storage.ref().child('case_SCDF_medical/$folder/$fileName');
+
+        // Create file from the image
+        File imageFile = File(image.path);
+
+        // Check if file exists
+        if (!await imageFile.exists()) {
+          print('Error: Image file does not exist at path: ${image.path}');
+          continue;
+        }
+
+        // Upload with metadata to ensure proper content type
+        final metadata = SettableMetadata(
+          contentType: 'image/jpeg',
+          customMetadata: {'picked-from': 'camera'},
+        );
+
+        // Upload with explicit task to track progress
+        final uploadTask = storageRef.putFile(imageFile, metadata);
+
+        // Monitor upload progress
+        uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+          print(
+              'Upload progress: ${snapshot.bytesTransferred}/${snapshot.totalBytes}');
+        }, onError: (e) {
+          print('Upload task error: $e');
+        });
+
+        // Wait for upload completion
+        await uploadTask;
+        print('Upload complete!');
 
         // Get the download URL
         final String downloadUrl = await storageRef.getDownloadURL();
+        print('Download URL: $downloadUrl');
         downloadUrls.add(downloadUrl);
       } catch (e) {
         print('Error uploading image: $e');
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Error uploading image: $e'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ));
       }
     }
 
+    print('Uploaded ${downloadUrls.length} images successfully');
     return downloadUrls;
   }
 
@@ -206,6 +249,13 @@ class _CitizenMedicalEmergencyPageState
     });
 
     try {
+      // Check if user is authenticated
+      if (_auth.currentUser == null) {
+        // Sign in anonymously if needed for emergency purposes
+        await _auth.signInAnonymously();
+        print("Signed in anonymously for emergency upload");
+      }
+
       // Get current user ID (or anonymous ID)
       String userId = 'anonymous';
       if (_auth.currentUser != null) {
@@ -281,7 +331,7 @@ class _CitizenMedicalEmergencyPageState
 
       // First check if the document exists
       final docRef =
-          _firestore.collection('emergency_cases').doc(_emergencyCaseId);
+          _firestore.collection('case_SCDF_medical').doc(_emergencyCaseId);
       final docSnapshot = await docRef.get();
 
       if (!docSnapshot.exists) {
