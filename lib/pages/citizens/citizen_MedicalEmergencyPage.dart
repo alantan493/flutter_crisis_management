@@ -49,6 +49,11 @@ class _CitizenMedicalEmergencyPageState
   final List<XFile> _identificationImages = [];
   final List<XFile> _woundImages = [];
 
+  // Track uploaded images
+  final Set<String> _uploadedIdentificationImagePaths = {};
+  final Set<String> _uploadedWoundImagePaths = {};
+  bool _allImagesUploaded = false;
+
   // Mock data
   final List<Map<String, dynamic>> _transcript = [];
   final String _assessmentSummary =
@@ -172,7 +177,8 @@ class _CitizenMedicalEmergencyPageState
   }
 
   // Improved function to upload images to Firebase Storage
-  Future<List<String>> _uploadImages(List<XFile> images, String folder) async {
+  Future<List<String>> _uploadImages(List<XFile> images, String folder,
+      {DocumentSnapshot? docSnapshot}) async {
     List<String> downloadUrls = [];
 
     if (images.isEmpty) {
@@ -180,7 +186,41 @@ class _CitizenMedicalEmergencyPageState
       return downloadUrls;
     }
 
-    for (var image in images) {
+    // Filter out images that have already been uploaded
+    final List<XFile> newImages = images.where((image) {
+      if (folder == 'id_images') {
+        return !_uploadedIdentificationImagePaths.contains(image.path);
+      } else {
+        // wound_images
+        return !_uploadedWoundImagePaths.contains(image.path);
+      }
+    }).toList();
+
+    if (newImages.isEmpty) {
+      print('No new images to upload');
+
+      // Return existing URLs for already uploaded images if any
+      if (folder == 'id_images' && docSnapshot != null && docSnapshot.exists) {
+        final data = docSnapshot.data() as Map<String, dynamic>?;
+        final List<dynamic>? existingUrls = data?['victimDetails']?['idImages'];
+        if (existingUrls != null) {
+          return List<String>.from(existingUrls);
+        }
+      } else if (folder == 'wound_images' &&
+          docSnapshot != null &&
+          docSnapshot.exists) {
+        final data = docSnapshot.data() as Map<String, dynamic>?;
+        final List<dynamic>? existingUrls =
+            data?['medicalDetails']?['woundImages'];
+        if (existingUrls != null) {
+          return List<String>.from(existingUrls);
+        }
+      }
+
+      return downloadUrls;
+    }
+
+    for (var image in newImages) {
       try {
         // Print image details for debugging
         print('Uploading image: ${image.path}');
@@ -226,6 +266,14 @@ class _CitizenMedicalEmergencyPageState
         final String downloadUrl = await storageRef.getDownloadURL();
         print('Download URL: $downloadUrl');
         downloadUrls.add(downloadUrl);
+
+        setState(() {
+          if (folder == 'id_images') {
+            _uploadedIdentificationImagePaths.add(image.path);
+          } else if (folder == 'wound_images') {
+            _uploadedWoundImagePaths.add(image.path);
+          }
+        });
       } catch (e) {
         print('Error uploading image: $e');
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -236,7 +284,26 @@ class _CitizenMedicalEmergencyPageState
       }
     }
 
-    print('Uploaded ${downloadUrls.length} images successfully');
+    // If we have existing URLs, merge them with new ones
+    if (folder == 'id_images' && docSnapshot != null && docSnapshot.exists) {
+      final data = docSnapshot.data() as Map<String, dynamic>?;
+      final List<dynamic>? existingUrls = data?['victimDetails']?['idImages'];
+      if (existingUrls != null) {
+        downloadUrls.addAll(List<String>.from(existingUrls));
+      }
+    } else if (folder == 'wound_images' &&
+        docSnapshot != null &&
+        docSnapshot.exists) {
+      final data = docSnapshot.data() as Map<String, dynamic>?;
+      final List<dynamic>? existingUrls =
+          data?['medicalDetails']?['woundImages'];
+      if (existingUrls != null) {
+        downloadUrls.addAll(List<String>.from(existingUrls));
+      }
+    }
+
+    print(
+        'Returned ${downloadUrls.length} URLs (${downloadUrls.length - newImages.length} existing, ${newImages.length} new)');
     return downloadUrls;
   }
 
@@ -262,6 +329,11 @@ class _CitizenMedicalEmergencyPageState
         userId = _auth.currentUser!.uid;
       }
 
+      // First check if the document exists - moved this up to use in _uploadImages
+      final docRef =
+          _firestore.collection('case_SCDF_medical').doc(_emergencyCaseId);
+      final docSnapshot = await docRef.get();
+
       // Create base data map
       final Map<String, dynamic> caseData = {
         'lastUpdated': FieldValue.serverTimestamp(),
@@ -279,10 +351,11 @@ class _CitizenMedicalEmergencyPageState
         caseData['finalRecommendations'] = _recommendations;
       }
 
-      // Upload images only if there are new ones to upload
+      // Upload images only if there are images to upload
       if (_identificationImages.isNotEmpty) {
-        final List<String> idImageUrls =
-            await _uploadImages(_identificationImages, 'id_images');
+        final List<String> idImageUrls = await _uploadImages(
+            _identificationImages, 'id_images',
+            docSnapshot: docSnapshot);
         caseData['victimDetails'] = {
           'nric': _nricController.text.trim(),
           'name': _nameController.text.trim(),
@@ -306,8 +379,9 @@ class _CitizenMedicalEmergencyPageState
 
       // Upload wound images if available
       if (_woundImages.isNotEmpty) {
-        final List<String> woundImageUrls =
-            await _uploadImages(_woundImages, 'wound_images');
+        final List<String> woundImageUrls = await _uploadImages(
+            _woundImages, 'wound_images',
+            docSnapshot: docSnapshot);
         caseData['medicalDetails'] = {
           'woundImages': woundImageUrls,
           'assessment': _assessmentSummary,
@@ -329,11 +403,6 @@ class _CitizenMedicalEmergencyPageState
         caseData['transcript'] = transcriptData;
       }
 
-      // First check if the document exists
-      final docRef =
-          _firestore.collection('case_SCDF_medical').doc(_emergencyCaseId);
-      final docSnapshot = await docRef.get();
-
       if (!docSnapshot.exists) {
         // Document doesn't exist, create it with initial data
         await docRef.set({
@@ -349,13 +418,15 @@ class _CitizenMedicalEmergencyPageState
         await docRef.update(caseData);
       }
 
-      // Clear uploaded images to prevent re-uploading
-      if (_identificationImages.isNotEmpty) {
-        _identificationImages.clear();
-      }
-      if (_woundImages.isNotEmpty) {
-        _woundImages.clear();
-      }
+      // REMOVED: Code that clears images
+
+      // Check if all images are uploaded
+      setState(() {
+        _allImagesUploaded = _identificationImages.every((img) =>
+                _uploadedIdentificationImagePaths.contains(img.path)) &&
+            _woundImages
+                .every((img) => _uploadedWoundImagePaths.contains(img.path));
+      });
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -429,6 +500,12 @@ class _CitizenMedicalEmergencyPageState
     try {
       // Upload final data
       await _uploadEmergencyData(isFinalUpload: true);
+
+      // NOW is when we clear the images - only when ending the call
+      _identificationImages.clear();
+      _woundImages.clear();
+      _uploadedIdentificationImagePaths.clear();
+      _uploadedWoundImagePaths.clear();
 
       // Dismiss loading dialog and get back to previous page
       if (mounted) {
@@ -781,10 +858,43 @@ class _CitizenMedicalEmergencyPageState
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              icon,
-              color: isSelected ? const Color(0xFFEA4335) : Colors.grey,
-              size: 20,
+            Stack(
+              children: [
+                Icon(
+                  icon,
+                  color: isSelected ? const Color(0xFFEA4335) : Colors.grey,
+                  size: 20,
+                ),
+                if (index == 1 &&
+                    (_identificationImages.isNotEmpty ||
+                        _woundImages.isNotEmpty) &&
+                    !_allImagesUploaded)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+                if (index == 1 && _allImagesUploaded)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
             Container(width: 6),
             Text(
@@ -949,8 +1059,62 @@ class _CitizenMedicalEmergencyPageState
   }
 
   Widget _buildImageUploadView() {
+    // Calculate status values
+    final bool hasImages =
+        _identificationImages.isNotEmpty || _woundImages.isNotEmpty;
+    final bool partiallyUploaded = hasImages &&
+        (_uploadedIdentificationImagePaths.isNotEmpty ||
+            _uploadedWoundImagePaths.isNotEmpty) &&
+        !_allImagesUploaded;
+
     return Column(
       children: [
+        // Upload Status Banner
+        if (hasImages)
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 300),
+            height: 36,
+            color: _allImagesUploaded
+                ? Colors.green.shade100
+                : partiallyUploaded
+                    ? Colors.amber.shade100
+                    : Colors.blue.shade50,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Icon(
+                  _allImagesUploaded
+                      ? Icons.check_circle
+                      : partiallyUploaded
+                          ? Icons.sync
+                          : Icons.info_outline,
+                  size: 16,
+                  color: _allImagesUploaded
+                      ? Colors.green
+                      : partiallyUploaded
+                          ? Colors.amber.shade800
+                          : Colors.blue.shade800,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  _allImagesUploaded
+                      ? "All images uploaded successfully"
+                      : partiallyUploaded
+                          ? "Some images still need to be uploaded"
+                          : "Images ready to upload",
+                  style: GoogleFonts.poppins(
+                    fontSize: 12,
+                    color: _allImagesUploaded
+                        ? Colors.green.shade800
+                        : partiallyUploaded
+                            ? Colors.amber.shade800
+                            : Colors.blue.shade800,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
         // Victim identification section
         Expanded(
           child: Container(
@@ -1005,27 +1169,63 @@ class _CitizenMedicalEmergencyPageState
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (_identificationImages.isNotEmpty)
-                        Container(
-                          width: 80,
-                          height: 100,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(
-                                color: Colors.grey.shade300, width: 1),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withAlpha(20),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                        Stack(
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 100,
+                              margin: const EdgeInsets.only(right: 12),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: _uploadedIdentificationImagePaths
+                                          .contains(
+                                              _identificationImages.last.path)
+                                      ? Colors.green.shade300
+                                      : Colors.grey.shade300,
+                                  width: _uploadedIdentificationImagePaths
+                                          .contains(
+                                              _identificationImages.last.path)
+                                      ? 2
+                                      : 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withAlpha(20),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                                image: DecorationImage(
+                                  image: FileImage(
+                                      File(_identificationImages.last.path)),
+                                  fit: BoxFit.cover,
+                                  colorFilter: _uploadedIdentificationImagePaths
+                                          .contains(
+                                              _identificationImages.last.path)
+                                      ? null
+                                      : ColorFilter.mode(
+                                          Colors.black.withOpacity(0.1),
+                                          BlendMode.darken),
+                                ),
                               ),
-                            ],
-                            image: DecorationImage(
-                              image: FileImage(
-                                  File(_identificationImages.last.path)),
-                              fit: BoxFit.cover,
                             ),
-                          ),
+                            if (_uploadedIdentificationImagePaths
+                                .contains(_identificationImages.last.path))
+                              Positioned(
+                                right: 4,
+                                bottom: 4,
+                                child: Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(Icons.check,
+                                      color: Colors.white, size: 12),
+                                ),
+                              ),
+                          ],
                         ),
                       Expanded(
                         child: Column(
@@ -1208,14 +1408,31 @@ class _CitizenMedicalEmergencyPageState
                           ),
                           itemCount: _woundImages.length,
                           itemBuilder: (context, index) {
+                            final bool isUploaded = _uploadedWoundImagePaths
+                                .contains(_woundImages[index].path);
                             return Stack(
                               fit: StackFit.expand,
                               children: [
                                 ClipRRect(
                                   borderRadius: BorderRadius.circular(8),
-                                  child: Image.file(
-                                    File(_woundImages[index].path),
-                                    fit: BoxFit.cover,
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: isUploaded
+                                            ? Colors.green.shade300
+                                            : Colors.grey.shade300,
+                                        width: isUploaded ? 2 : 1,
+                                      ),
+                                    ),
+                                    child: Image.file(
+                                      File(_woundImages[index].path),
+                                      fit: BoxFit.cover,
+                                      color: isUploaded
+                                          ? null
+                                          : Colors.black.withOpacity(0.1),
+                                      colorBlendMode:
+                                          isUploaded ? null : BlendMode.darken,
+                                    ),
                                   ),
                                 ),
                                 Positioned(
@@ -1241,6 +1458,20 @@ class _CitizenMedicalEmergencyPageState
                                     ),
                                   ),
                                 ),
+                                if (isUploaded)
+                                  Positioned(
+                                    right: 4,
+                                    bottom: 4,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.green,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(Icons.check,
+                                          color: Colors.white, size: 12),
+                                    ),
+                                  ),
                               ],
                             );
                           },
